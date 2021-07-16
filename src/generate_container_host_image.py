@@ -162,6 +162,7 @@ if __name__ == "__main__":
 			)
 
 			print("Creating image from snapshot ...")
+			# TODO: add check here to only try and delete the image if it already exists
 			try:
 				subprocess.check_call("gcloud compute images delete --quiet {imagename}".format(imagename = imagename), shell = True)
 			except subprocess.CalledProcessError:
