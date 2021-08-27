@@ -35,13 +35,19 @@ def parse(X, regex, fields):
 	T = X.str.extract(regex).rename(columns = dict(enumerate(fields)));
 	return T
 
-def print_conf(D, path):
+def print_conf(D, path, owner = None, perm = None):
+	if os.path.exists(path):
+		subprocess.check_call(["sudo", "rm", "-rf", path])
 	with open(path, "w") as f:
 		for r in D.iteritems():
 			f.write("{k}={v}\n".format(
 			  k = re.sub(r"^(NodeName|PartitionName)\d+$", r"\1", r[0]),
 			  v = r[1]
 			))
+	if perm is not None:
+		os.chmod(path, mode=perm)
+	if owner is not None:
+		subprocess.check_call(["sudo", "chown", str(pwd.getpwnam(owner)[2]), path])
 
 if __name__ == "__main__":
 	CLUST_PROV_ROOT = os.environ["CLUST_PROV_ROOT"] if "CLUST_PROV_ROOT" in os.environ \
@@ -152,7 +158,7 @@ if __name__ == "__main__":
 	C = parse_slurm_conf("{CPR}/conf/slurmdbd.conf".format(CPR = shlex.quote(CLUST_PROV_ROOT)))
 	C["DbdHost"] = ctrl_hostname
 
-	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurmdbd.conf")
+	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurmdbd.conf", perm=0o600, owner="slurm")
 
 	#
 	# start Slurm controller

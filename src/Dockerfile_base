@@ -15,13 +15,12 @@ apt-get -y install build-essential vim git python3-pip \
 
 # 2. convenient symlinks; NFS mount folder
 RUN ln -s /usr/bin/python3 /usr/bin/python && \
-ln -s /usr/bin/pip3 /usr/bin/pip && \
 mkdir -p /mnt/nfs
 
 # 3. build Slurm
-RUN wget https://download.schedmd.com/slurm/slurm-19.05.3-2.tar.bz2 && \
-tar xjf slurm-19.05.3-2.tar.bz2 && \
-cd slurm-19.05.3-2 && \
+RUN wget https://download.schedmd.com/slurm/slurm-20.11.7.tar.bz2 && \
+tar xjf slurm-20.11.7.tar.bz2 && \
+cd slurm-20.11.7 && \
 ./configure --prefix=/usr/local --sysconfdir=/usr/local/etc \
   --with-mysql_config=/usr/bin --with-hdf5=no && \
 make && make install
@@ -41,7 +40,7 @@ mysql -u root -e "grant all on slurm_acct_db.* TO 'slurm'@'localhost';"
 RUN dd if=/dev/zero bs=1 count=1024 of=/etc/munge/munge.key
 
 # 7. Python prereqs
-RUN pip install pandas crcmod
+RUN pip3 install pandas crcmod
 
 # 8. install gcloud
 RUN mkdir /gcsdk && \
