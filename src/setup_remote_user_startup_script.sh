@@ -12,7 +12,7 @@ if ! [ -f /.startup ]; then
     sudo groupadd -g `id -g` `whoami`
 
     sudo apt-get -qq update
-    sudo apt-get -qq -y install nfs-common docker.io python3-pip nfs-kernel-server git
+    sudo apt-get -qq -y install nfs-common docker.io python3-pip nfs-kernel-server git python3-venv
     sudo pip3 install docker-compose google-crc32c
 
     echo '* hard nofile 6400' | sudo tee -a /etc/security/limits.conf > /dev/null
@@ -34,9 +34,11 @@ if ! [ -f /.startup ]; then
     chmod 400 ~/slurm_gcp_docker/getzlabkey
     GIT_SSH_COMMAND='ssh -i ~/slurm_gcp_docker/getzlabkey -o IdentitiesOnly=yes -o StrictHostKeyChecking=no' git clone git@github.com:getzlab/wolF.git ~/wolF
     GIT_SSH_COMMAND='ssh -i ~/slurm_gcp_docker/getzlabkey -o IdentitiesOnly=yes -o StrictHostKeyChecking=no' git clone git@github.com:getzlab/canine.git ~/canine
+    GIT_SSH_COMMAND='ssh -i ~/slurm_gcp_docker/getzlabkey -o IdentitiesOnly=yes -o StrictHostKeyChecking=no' git clone git@github.com:getzlab/wolf-gui.git ~/wolf-gui
 
     (cd ~/canine && git checkout master && sudo pip3 install .)
     (cd ~/wolF && git checkout master && sudo pip3 install .)
+    (cd ~/wolf-gui && git checkout master && python3 -m venv venv && ./venv/bin/pip3 install -r wolfapi/requirements.txt)
 
     cp -r ~/wolF/examples ~/examples
 
@@ -55,6 +57,8 @@ if ! [ -f /.startup ]; then
     sudo systemctl enable prefectserver
     systemctl start --user jupyternotebook # port 8888
     systemctl enable --user jupyternotebook
+    systemctl start --user wolfgui # port 9900
+    systemctl enable --user wolfgui # port 9900
 
     ## vs code
     curl -fsSL https://code-server.dev/install.sh | sh
