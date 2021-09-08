@@ -16,6 +16,11 @@ if ! [ -f /.startup ]; then
     mkdir -p ~/.config
     mv ~/copied_gcloud_dir ~/.config/gcloud
 
+    # set default project
+    PROJECT=`curl "http://metadata.google.internal/computeMetadata/v1/project/project-id" -H "Metadata-Flavor: Google"`
+    gcloud config set project $PROJECT
+    gcloud config set compute/zone us-east1-d
+
     ## create /mnt/nfs directory
     sudo mkdir /mnt/nfs
     sudo chmod 777 /mnt/nfs
@@ -79,7 +84,6 @@ if ! [ -f /.startup ]; then
     sudo systemctl enable --now code-server@$USER
 
     # build slurm image (TODO: check for existing images)
-    PROJECT=`curl "http://metadata.google.internal/computeMetadata/v1/project/project-id" -H "Metadata-Flavor: Google"`
     (cd ~/slurm_gcp_docker/src && bash ./setup.sh)
 
     # start canine backend
