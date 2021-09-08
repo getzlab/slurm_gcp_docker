@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
 			print("Creating image from snapshot ...")
 			try:
-				subprocess.check_call("gcloud compute images delete --quiet {imagename}".format(imagename = imagename), shell = True)
+				subprocess.check_call("gcloud compute images delete --quiet {imagename}".format(imagename = imagename), shell = True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 			except subprocess.CalledProcessError:
 				pass
 			subprocess.check_call(
