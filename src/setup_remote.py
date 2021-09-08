@@ -82,6 +82,9 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
     subprocess.check_call(
         f"gcloud compute scp {SLURM_GCP_DOCKER_DIR}/ {instance_name}:slurm_gcp_docker --zone {zone} --recurse --project {project} --quiet --scp-flag='-q'", shell=True
     )
+    subprocess.check_call(
+        f"gcloud compute scp ~/.config/gcloud/ {instance_name}:copied_gcloud_dir --zone {zone} --recurse --project {project} --quiet --scp-flag='-q'", shell=True
+    )
 
     ## Execute setup script
     subprocess.check_call(

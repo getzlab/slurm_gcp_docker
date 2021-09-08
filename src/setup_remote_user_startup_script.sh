@@ -11,6 +11,11 @@ if ! [ -f /.startup ]; then
     ## OS-login will map the user to a specific GID, however in ubuntu it didn't actually create the group.
     sudo groupadd -g `id -g` `whoami`
 
+    ## Move copied gcloud dir to ~/.config/gcloud
+    mv ~/.config/gcloud ~/.config/gcloud_backup || true
+    mkdir -p ~/.config
+    mv ~/copied_gcloud_dir ~/.config/gcloud
+
     ## create /mnt/nfs directory
     sudo mkdir /mnt/nfs
     sudo chmod 777 /mnt/nfs
@@ -72,6 +77,10 @@ if ! [ -f /.startup ]; then
     echo 'cert: false'               >> ~/.config/code-server/config.yaml
 
     sudo systemctl enable --now code-server@$USER
+
+    # build slurm image (TODO: check for existing images)
+    PROJECT=`curl "http://metadata.google.internal/computeMetadata/v1/project/project-id" -H "Metadata-Flavor: Google"`
+    (cd ~/slurm_gcp_docker/src && bash ./setup.sh)
 
     set +e
 fi
