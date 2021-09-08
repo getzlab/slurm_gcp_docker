@@ -82,6 +82,10 @@ if ! [ -f /.startup ]; then
     PROJECT=`curl "http://metadata.google.internal/computeMetadata/v1/project/project-id" -H "Metadata-Flavor: Google"`
     (cd ~/slurm_gcp_docker/src && bash ./setup.sh)
 
+    # start canine backend
+    systemctl start --user caninebackend
+    systemctl enable --user caninebackend
+
     set +e
 fi
 
