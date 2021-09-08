@@ -11,6 +11,10 @@ if ! [ -f /.startup ]; then
     ## OS-login will map the user to a specific GID, however in ubuntu it didn't actually create the group.
     sudo groupadd -g `id -g` `whoami`
 
+    ## create /mnt/nfs directory
+    sudo mkdir /mnt/nfs
+    sudo chmod 777 /mnt/nfs
+
     sudo apt-get -qq update
     sudo apt-get -qq -y install nfs-common docker.io python3-pip nfs-kernel-server git python3-venv
     sudo pip3 install docker-compose google-crc32c
