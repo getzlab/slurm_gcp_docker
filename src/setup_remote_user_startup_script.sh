@@ -8,6 +8,9 @@ if ! [ -f /.startup ]; then
     ## dependencies
     set -e
 
+    ## OS-login will map the user to a specific GID, however in ubuntu it didn't actually create the group.
+    sudo groupadd -g `id -g` `whoami`
+
     sudo apt-get -qq update
     sudo apt-get -qq -y install nfs-common docker.io python3-pip nfs-kernel-server git
     sudo pip3 install docker-compose google-crc32c
