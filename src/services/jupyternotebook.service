@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 # This is unsafe, but GCP blocks these ports by default.
-ExecStart=/usr/bin/jupyter notebook \
+ExecStart=/usr/local/bin/jupyter notebook \
     --no-browser \
     --port=8888 \
     --notebook-dir=~/ \

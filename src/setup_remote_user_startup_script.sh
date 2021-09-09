@@ -42,7 +42,7 @@ if ! [ -f /.startup ]; then
     sudo chmod 777 /var/run/docker.sock ## won't work after reboot
 
     ## jupyter notebook
-    sudo apt-get -qq -y install jupyter
+    sudo pip install notebook
 
     ## wolf
     chmod 400 ~/slurm_gcp_docker/getzlabkey
