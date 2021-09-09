@@ -1,0 +1,13 @@
+# Install to ~/.config/systemd/user/wolfgui.service
+[Unit]
+Description=Wolf GUI backend api
+After=network.target
+
+[Service]
+ExecStart=%h/wolf-gui/venv/bin/python3 %h/wolf-gui/wolfapi/main.py
+Restart=no
+PrivateTmp=true
+ProtectSystem=true
+
+[Install]
+WantedBy=multi-user.target

@@ -48,12 +48,16 @@ if __name__ == "__main__":
 
 	#
 	# get zone of current instance
-	default_zone = subprocess.check_output("""gcloud compute instances list --filter="name={hostname}" \
-	  --format='csv[no-heading](zone)'""".format(hostname = socket.gethostname()), shell = True).decode().rstrip()
+	default_zone = subprocess.check_output(
+		"curl -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/zone", shell=True
+	).decode().rstrip()
+	default_zone = default_zone.split("/")[-1]
 
 	#
 	# get current project (if any)
-	default_proj = subprocess.check_output("gcloud config list --format='value(core.project)'", shell = True).decode().rstrip()
+	default_proj = subprocess.check_output(
+		'curl "http://metadata.google.internal/computeMetadata/v1/project/project-id" -H "Metadata-Flavor: Google"', shell=True
+	).decode().rstrip()
 
 	#
 	# parse arguments
@@ -164,7 +168,7 @@ if __name__ == "__main__":
 			print("Creating image from snapshot ...")
 			# TODO: add check here to only try and delete the image if it already exists
 			try:
-				subprocess.check_call("gcloud compute images delete --quiet {imagename}".format(imagename = imagename), shell = True)
+				subprocess.check_call("gcloud compute images delete --quiet {imagename}".format(imagename = imagename), shell = True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 			except subprocess.CalledProcessError:
 				pass
 			subprocess.check_call(
