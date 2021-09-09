@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import subprocess, os, sys, re, time, textwrap, getpass
+from setup_local import check_gcloud_auth
 
 this_dir = os.path.dirname(__file__)
 SLURM_GCP_DOCKER_DIR = os.path.realpath(os.path.join(this_dir, ".."))
@@ -44,7 +45,10 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
         project = get_current_project()
     if zone is None:
         zone = get_current_zone()
-    
+
+    ## Make sure we've actually authenticated
+    check_gcloud_auth()
+
     wolfuser = getpass.getuser()
     ## I used "enable-oslogin=TRUE", which ensures consistent UID within a project.
     subprocess.check_call(

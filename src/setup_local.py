@@ -10,16 +10,34 @@ def error(msg, dedent=True):
     sys.exit(1)
 
 def check_gcloud_auth():
+    # check if we even have gcloud
     if not shutil.which("gcloud"):
         error("gcloud is not installed")
+
+    # make sure that we've authenticated at all
+    try:
+        subprocess.check_call("gcloud auth print-access-token", shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        error("""\
+        You have not yet authenticated with Google Cloud. Please run
+            gcloud auth login --update-adc""", dedent = True)
+
+    # make sure we've authenticated as a user, not a service account
     auth_email = subprocess.check_output('gcloud config list account --format "value(core.account)"', shell=True)
     auth_email = auth_email.decode().rstrip().split("\n")[0]
     if auth_email.endswith("gserviceaccount.com"):
         error("""\
         gcloud is using service account, please first run
-            gcloud auth login --update-adc  """)
-        sys.exit(1)
-    ## Seems there is no easy way to check if 'gcloud auth application-default login' has been run??
+            gcloud auth login --update-adc""", dedent = True)
+
+    # make sure we've authenticated with application credentials
+    try:
+        subprocess.check_call("gcloud auth application-default print-access-token", shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        error("""\
+        You have not fully authenticated with Google Cloud. Please run
+            gcloud auth login --update-adc
+        Note the '--update-adc' flag!""", dedent = True)
 
 def check_git():
     if not shutil.which("git"):
