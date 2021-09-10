@@ -11,6 +11,9 @@ if ! [ -f /.startup ]; then
     ## OS-login will map the user to a specific GID, however in ubuntu it didn't actually create the group.
     sudo groupadd -g `id -g` `whoami`
 
+    ## symlink to /mnt/nfs so that it can be shown in the jupyter notebook file explorer
+    ln -sv /mnt/nfs ~/nfs
+
     ## Move copied gcloud dir to ~/.config/gcloud
     mv ~/.config/gcloud ~/.config/gcloud_backup || true
     mkdir -p ~/.config
@@ -65,6 +68,10 @@ if ! [ -f /.startup ]; then
 
     ## install systemd units
     (cd ~/slurm_gcp_docker/src && python3 install_service.py)
+
+    ## setup jupyter notebook config to allow iframe embedding
+    mkdir -p ~/.jupyter
+    echo "c.NotebookApp.tornado_settings = { 'headers': { 'Content-Security-Policy': 'frame-ancestors self *', } }" > ~/.jupyter/jupyter_notebook_config.py
 
     ## start prefect server and jupyter notebook
     sudo systemctl start prefectserver          # port 8080 and 4200
