@@ -66,6 +66,10 @@ if ! [ -f /.startup ]; then
     ## install systemd units
     (cd ~/slurm_gcp_docker/src && python3 install_service.py)
 
+    ## setup jupyter notebook config to allow iframe embedding
+    mkdir -p ~/.jupyter
+    echo "c.NotebookApp.tornado_settings = { 'headers': { 'Content-Security-Policy': 'frame-ancestors self *', } }" > ~/.jupyter/jupyter_notebook_config.py
+
     ## start prefect server and jupyter notebook
     sudo systemctl start prefectserver          # port 8080 and 4200
     sudo systemctl enable prefectserver
