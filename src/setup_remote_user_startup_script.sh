@@ -11,6 +11,9 @@ if ! [ -f /.startup ]; then
     ## OS-login will map the user to a specific GID, however in ubuntu it didn't actually create the group.
     sudo groupadd -g `id -g` `whoami`
 
+    ## symlink to /mnt/nfs so that it can be shown in the jupyter notebook file explorer
+    ln -sv /mnt/nfs ~/nfs
+
     ## Move copied gcloud dir to ~/.config/gcloud
     mv ~/.config/gcloud ~/.config/gcloud_backup || true
     mkdir -p ~/.config
