@@ -52,7 +52,7 @@ def map_partition_disksize(partition):
 for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"]):
 	machine_type, not_nonpreemptible_part = key
 	machine_type = map_partition_machinetype(machine_type)
-	disk_size = map_partition_disksize(machine_type)
+	disk_size = 20 # map_partition_disksize(machine_type)
 
 	# override 'preemptible' flag if this node is in the "non-preemptible" partition
 	if not not_nonpreemptible_part:
