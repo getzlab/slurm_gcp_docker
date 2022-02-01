@@ -4,8 +4,7 @@
 # healthy. if not, blacklist this node.
 
 # get zone of instance
-ZONE=$(gcloud compute instances list --filter="name=${HOSTNAME}" \
-  --format='csv[no-heading](zone)')
+ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2> /dev/null))
 
 while true; do
 	# check if Podman is responsive
