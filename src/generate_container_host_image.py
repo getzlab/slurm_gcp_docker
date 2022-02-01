@@ -75,7 +75,7 @@ if __name__ == "__main__":
 	try:
 		subprocess.check_call("""gcloud compute --project {proj} instances create {host} --zone {zone} \
 		  --machine-type n1-standard-1 --image ubuntu-minimal-2004-focal-v20210119a \
-		  --image-project ubuntu-os-cloud --boot-disk-size 50GB --boot-disk-type pd-standard \
+		  --image-project ubuntu-os-cloud --boot-disk-size 10GB --boot-disk-type pd-standard \
 		  --metadata-from-file startup-script=<({build_script})""".format(
 			host = host, proj = proj, zone = zone, build_script = args.build_script
 		), shell = True, executable = "/bin/bash")
