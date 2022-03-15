@@ -3,6 +3,8 @@
 # runs inside each worker container, checks every 5 minutes if the container is
 # healthy. if not, blacklist this node.
 
+export CLOUDSDK_CONFIG=/etc/gcloud
+
 # get zone of instance
 ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2> /dev/null))
 
@@ -18,6 +20,11 @@ while true; do
 	if ! df / | awk 'NR == 2 { if($4/($4 + $3) < 0.05) { exit 1 } }'; then
 		scontrol update nodename=$HOSTNAME state=FAIL reason="local disk full" && \
 		scontrol update nodename=$HOSTNAME state=DOWN reason="local disk full" && \
+		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
+	fi
+
+	# check if controller is responding; self-destruct if not
+	if scontrol ping | grep -q "is DOWN"; then
 		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
 	fi
 
