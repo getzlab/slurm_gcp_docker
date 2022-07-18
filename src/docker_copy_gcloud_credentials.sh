@@ -9,3 +9,7 @@ chown -R slurm:slurm ~slurm/.config/gcloud
 HOMEDIR=`eval echo ~$HOST_USER`
 [ ! -d $HOMEDIR/.config ] && mkdir -p $HOMEDIR/.config
 cp -r /etc/gcloud $HOMEDIR/.config/gcloud && chown -R $HOST_USER:$HOST_USER $HOMEDIR/.config/
+
+# add Docker credentials to user's home directory
+[ ! -d $HOMEDIR/.docker ] && mkdir -p $HOMEDIR/.docker
+ln -s /usr/local/share/slurm_gcp_docker/conf/docker_config.json $HOMEDIR/.docker/config.json
