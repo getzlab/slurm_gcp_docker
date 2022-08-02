@@ -24,7 +24,9 @@ while true; do
 	fi
 
 	# check if controller is responding; self-destruct if not
-	if scontrol ping | grep -q "is DOWN"; then
+	timeout 30 bash -c 'scontrol ping | grep -q "is DOWN"'
+	RC=$?
+	if [[ $RC == 124 || $RC == 0 ]]; then # 124 -> timeout; 0 -> grep succeeded
 		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
 	fi
 
