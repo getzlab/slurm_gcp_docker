@@ -104,7 +104,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", type=str)
-    parser.add_argument("--zone", type=str)
+    parser.add_argument("--zone", type=str, default = "us-east1-d")
     parser.add_argument("instance_name", type=str)
     parser.add_argument("--machine-type", type=str, default="n1-standard-4")
     parser.add_argument("--boot-disk-size", type=int, default=200)
