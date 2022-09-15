@@ -18,9 +18,9 @@ RUN ln -s /usr/bin/python3 /usr/bin/python && \
 mkdir -p /mnt/nfs
 
 # 3. build Slurm
-RUN wget https://download.schedmd.com/slurm/slurm-20.11.7.tar.bz2 && \
-tar xjf slurm-20.11.7.tar.bz2 && \
-cd slurm-20.11.7 && \
+RUN wget https://download.schedmd.com/slurm/slurm-20.11.9.tar.bz2 && \
+tar xjf slurm-20.11.9.tar.bz2 && \
+cd slurm-20.11.9 && \
 ./configure --prefix=/usr/local --sysconfdir=/usr/local/etc \
   --with-mysql_config=/usr/bin --with-hdf5=no && \
 make && make install
