@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# This builds the base container image. Generally, this will be pulled from the
-# container registry.
+# This builds the base container image. This is only for developers adding new
+# features to the Slurm GCP Docker image.
 
 # note that the Docker daemon must have experimental features enabled;
 # add { "experimental": true } to /etc/docker/daemon.json
