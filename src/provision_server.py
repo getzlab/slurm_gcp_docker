@@ -79,7 +79,7 @@ if __name__ == "__main__":
 	  shell = True, executable = '/bin/bash')
 
 	# delete any preexisting configuration files
-	subprocess.check_call("find /mnt/nfs/clust_conf -type f -exec rm -f {} +", shell = True)
+	subprocess.check_call("find /mnt/nfs/clust_conf -type f ! -name nodetypes.json -exec rm -f {} +", shell = True)
 
 	# Slurm conf. file cgroup.conf and boto conf can be copied-as is
 	# (other conf. files will need editing below)
@@ -110,7 +110,8 @@ if __name__ == "__main__":
 	## E.g.
 	##   { "type": "n1-highmem-16", "cpus": "16", "realmemory": "102200", "weight": "4" , "number":   10, "preemptible":  True }
 	##   { "type": "n1-highmem-32", "cpus": "32", "realmemory": "204200", "weight": "4" , "number":   10, "preemptible":  True }
-	NODE_TYPES = pd.read_json(os.path.join(os.path.dirname(__file__), "../conf/nodetypes.json"))
+	NODE_TYPES = pd.read_json("/mnt/nfs/clust_conf/slurm/nodetypes.json" if os.path.exists("/mnt/nfs/clust_conf/slurm/nodetypes.json") else "{CPR}/conf/nodetypes.json".format(CPR = shlex.quote(CLUST_PROV_ROOT)))
+	NODE_TYPES.to_json("/mnt/nfs/clust_conf/slurm/nodetypes.json", orient = "records", indent = 1)
 	NODE_TYPES["range_end"]   = np.cumsum(NODE_TYPES["number"])
 	NODE_TYPES["range_start"] = np.append([1], NODE_TYPES["range_end"][:-1] + 1) 
 	NODE_TYPES["nodes"]       = NODE_TYPES.apply(lambda row: "{HN}-worker[{range_start}-{range_end}]".format(HN=ctrl_hostname, **row), axis=1)
