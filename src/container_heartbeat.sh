@@ -14,27 +14,21 @@ ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.inter
 while true; do
 	# check if Podman is responsive
 	if ! timeout 30 podman info; then
-		#scontrol update nodename=$HOSTNAME state=FAIL reason="podman flatlined" && \
-		scontrol update nodename=$HOSTNAME state=DOWN reason="podman flatlined" && \
-		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet && \
-		scontrol update nodename=$HOSTNAME state=RESUME
+		scontrol update nodename=$HOSTNAME state=FAIL reason="podman flatlined" && \
+		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
 	fi
 
 	# check if disk is full (<5% space remaining on root partition)
 	if ! df / | awk 'NR == 2 { if($4/($4 + $3) < 0.05) { exit 1 } }'; then
-		#scontrol update nodename=$HOSTNAME state=FAIL reason="local disk full" && \
-		scontrol update nodename=$HOSTNAME state=DOWN reason="local disk full" && \
-		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet && \
-		scontrol update nodename=$HOSTNAME state=RESUME
+		scontrol update nodename=$HOSTNAME state=FAIL reason="local disk full" && \
+		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
 	fi
 
 	# check if this node had problems attaching a disk (as reported by a task's
 	# localization script)
 	if [ -f /.fatal_disk_issue_sentinel ]; then
-		#scontrol update nodename=$HOSTNAME state=FAIL reason="disk attach problems" && \
-		scontrol update nodename=$HOSTNAME state=DOWN reason="disk attach problems" && \
-		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet && \
-		scontrol update nodename=$HOSTNAME state=RESUME
+		scontrol update nodename=$HOSTNAME state=FAIL reason="disk attach problems" && \
+		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
 	fi
 
 	# check if controller is responding; self-destruct if not
