@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as build
+FROM ubuntu:22.04 as build
 
 WORKDIR /tmp
 
@@ -9,9 +9,16 @@ WORKDIR /tmp
 RUN apt-get update && \
 DEBIAN_FRONTEND=noninteractive \
 apt-get -y install --no-install-recommends tzdata && \
-apt-get -y install build-essential vim git python3-pip \
-  nfs-common portmap libmariadb-dev mariadb-client mariadb-server \
-  munge libmunge-dev libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl
+apt-get -y install software-properties-common build-essential vim git nfs-common \
+  portmap libmariadb-dev mariadb-client mariadb-server munge libmunge-dev \
+  libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl
+
+# Python 3.8
+RUN add-apt-repository -y ppa:deadsnakes/ppa && apt-get update && \
+  apt-get install -y python3.8 python3.8-dev python3.8-venv python3.8-distutils && \
+  rm -f /usr/bin/python3 && ln -s /usr/bin/python3.8 /usr/bin/python3
+# pip
+RUN python3 -m ensurepip && python3 -m pip install pip
 
 # 2. convenient symlinks; NFS mount folder
 RUN ln -s /usr/bin/python3 /usr/bin/python && \
@@ -32,7 +39,7 @@ mkdir -p /run/munge
 
 # 5. configure MySQL
 RUN mkdir -p /var/run/mysqld && chown mysql:mysql /var/run/mysqld && \
-(mysqld & while ! mysqladmin -s status; do sleep 1; done ) && \
+(mysqld --user root & while ! mysqladmin -s status; do sleep 1; done ) && \
 mysql -u root -e "create user 'slurm'@'localhost'" && \
 mysql -u root -e "grant all on slurm_acct_db.* TO 'slurm'@'localhost';"
 
@@ -59,14 +66,9 @@ COPY ./src/ /usr/local/share/slurm_gcp_docker/src/
 COPY ./conf/ /usr/local/share/slurm_gcp_docker/conf/
 
 # 10. podman
-RUN apt-get -qq -y install gnupg && \
-. /etc/os-release && \
-curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | apt-key add - && \
-echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list && \
-apt-get -qq update && \
-apt-get -qq -y install fuse-overlayfs podman iptables && \
-DEBIAN_FRONTEND=noninteractive \
-apt-get -qq -y install --no-install-recommends tzdata
+RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
+RUN wget -O podman.dpkg http://ftp.us.debian.org/debian/pool/main/libp/libpod/podman_4.2.0+ds1-3_amd64.deb && \
+  dpkg -i podman.dpkg && apt-get install -y fuse-overlayfs iptables
 
 COPY src/podman_conf/* /etc/containers/
 
