@@ -9,7 +9,7 @@ sudo groupadd -g 1338 docker && \
 sudo apt-get install -y docker.io && \
 sudo chmod 666 /var/run/docker.sock
 # ENABLE CGROUPS
-sudo ssed -R -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/(.*)"(.*)"(.*)/\1"\2 cgroup_enable=memory swapaccount=1"\3/' /etc/default/grub && \
+sudo ssed -R -i '/GRUB_CMDLINE_LINUX=/s/(.*)"(.*)"(.*)/\1"\2 cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0"\3/' /etc/default/grub && \
 sudo update-grub && \
 # INSTALL GCLOUD
 [ ! -d ~$USER/.config/gcloud ] && sudo -u $USER mkdir -p ~$USER/.config/gcloud
