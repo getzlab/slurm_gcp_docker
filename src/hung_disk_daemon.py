@@ -29,9 +29,9 @@ while True:
         try:
             mountpoint = subprocess.check_output(f"lsblk -n -o MOUNTPOINT {dev}", shell = True).decode().rstrip()
 
-            # disk is attached but not mounted OR
             # disk is attached and mounted but should have been detached (as indicated by absence of lock)
-            if mountpoint == "" or subprocess.run(f"flock -n {mountpoint} true", shell = True).returncode == 0:
+            # TODO: only do this if disk was confirmed to have been attached for a task (don't interrupt disks in the process of mounting)
+            if mountpoint != "" and subprocess.run(f"flock -n {mountpoint} true", shell = True).returncode == 0:
                 # second time we've encountered this disk; remove it
                 if disk in bad_disks:
                     subprocess.check_call(f"mountpoint -q {mountpoint} && sudo umount {mountpoint} || true", shell = True)
@@ -42,8 +42,11 @@ while True:
                 # give disk a second chance, in case it's in the process of being created
                 else:
                     bad_disks.add(disk)
-        except:
-            # TODO: print exception (to where?)
-            pass
+
+            # disk is good now; remove from bad disk set
+            else:
+                bad_disks.discard(disk)
+        except Exception as e:
+            print(e)
 
     time.sleep(30)
