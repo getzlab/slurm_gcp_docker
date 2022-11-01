@@ -40,7 +40,7 @@ mysql -u root -e "grant all on slurm_acct_db.* TO 'slurm'@'localhost';"
 RUN dd if=/dev/zero bs=1 count=1024 of=/etc/munge/munge.key
 
 # 7. Python prereqs
-RUN pip3 install pandas crcmod google-crc32c
+RUN pip3 install pandas crcmod google-crc32c requests
 
 # 8. install gcloud and AWS
 RUN mkdir /gcsdk && \
