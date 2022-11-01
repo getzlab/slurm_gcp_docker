@@ -68,6 +68,7 @@ if __name__ == "__main__":
 	  "/mnt/nfs/clust_conf/slurm",
 	  "/mnt/nfs/clust_conf/canine",
 	  "/mnt/nfs/clust_scripts",
+	  "/mnt/nfs/clust_logs",
 	  "/mnt/nfs/workspace"
 	]:
 		subprocess.check_call("""
@@ -80,6 +81,9 @@ if __name__ == "__main__":
 
 	# delete any preexisting configuration files
 	subprocess.check_call("find /mnt/nfs/clust_conf -type f ! -name nodetypes.json -exec rm -f {} +", shell = True)
+
+	# delete any preexisting worker log files
+	subprocess.check_call("find /mnt/nfs/clust_logs -type f -exec rm -f {} +", shell = True)
 
 	# Slurm conf. file cgroup.conf and boto conf can be copied-as is
 	# (other conf. files will need editing below)
