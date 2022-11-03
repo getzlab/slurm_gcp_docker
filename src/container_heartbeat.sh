@@ -17,7 +17,7 @@ export LOGFILE=/mnt/nfs/clust_logs/${HOSTNAME}.heartbeat.log
 
 while true; do
 	# check if Podman is responsive
-	if ! timeout 30 podman info; then
+	if ! timeout 300 podman info; then
 		echo "`date` podman flatlined" >> $LOGFILE
 		scontrol update nodename=$HOSTNAME state=FAIL reason="podman flatlined" && \
 		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
