@@ -70,7 +70,8 @@ RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
 RUN wget -O podman.dpkg http://ftp.us.debian.org/debian/pool/main/libp/libpod/podman_4.2.0+ds1-3_amd64.deb && \
   dpkg -i podman.dpkg && apt-get install -y fuse-overlayfs iptables
 
-COPY src/podman_conf/* /etc/containers/
+COPY src/podman_conf/*.conf /etc/containers/
+COPY src/podman_conf/registries.conf.d/* /etc/containers/registries.conf.d/
 
 # 11. sudo for all
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
