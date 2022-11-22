@@ -1,49 +1,53 @@
 #!/bin/bash
 
-# install NFS, Docker, associated files, gcloud
-cat <<EOF
+# install NFS - Docker - associated files - gcloud
+
+# ENABLE OS-LOGIN FOR ALT SHELLS
+apt update
+apt -y install tcsh zsh
+
 # NFS
-sudo apt-get update && sudo apt-get -y install git nfs-kernel-server nfs-common portmap ssed iptables && \
+apt -y install git nfs-kernel-server nfs-common portmap ssed iptables
+
 # DOCKER
-sudo groupadd -g 1338 docker && \
-sudo apt-get install -y docker.io && \
-sudo chmod 666 /var/run/docker.sock
+groupadd -g 1338 docker
+apt -y install docker.io
+chmod 666 /var/run/docker.sock
+
 # ENABLE CGROUPS
-sudo ssed -R -i '/GRUB_CMDLINE_LINUX=/s/(.*)"(.*)"(.*)/\1"\2 cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0"\3/' /etc/default/grub && \
-sudo update-grub && \
+ssed -R -i '/GRUB_CMDLINE_LINUX=/s/(.*)"(.*)"(.*)/\1"\2 cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0"\3/' /etc/default/grub
+update-grub
+
 # INSTALL GCLOUD
 [ ! -d ~$USER/.config/gcloud ] && sudo -u $USER mkdir -p ~$USER/.config/gcloud
-sudo mkdir /gcsdk && \
-sudo wget -O gcs.tgz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-318.0.0-linux-x86_64.tar.gz && \
-sudo tar xzf gcs.tgz -C /gcsdk && \
-sudo /gcsdk/google-cloud-sdk/install.sh --usage-reporting false --path-update true --quiet && \
-sudo ln -s /gcsdk/google-cloud-sdk/bin/* /usr/bin
-EOF
+mkdir /gcsdk
+wget -O gcs.tgz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-318.0.0-linux-x86_64.tar.gz
+tar xzf gcs.tgz -C /gcsdk
+/gcsdk/google-cloud-sdk/install.sh --usage-reporting false --path-update true --quiet
+ln -s /gcsdk/google-cloud-sdk/bin/* /usr/bin
 
 # make sure shutdown script that tells Slurm controller node is going offline
 # runs before the Docker daemon shuts down
-echo "[ ! -d /etc/systemd/system/google-shutdown-scripts.service.d ] && \
-sudo mkdir -p /etc/systemd/system/google-shutdown-scripts.service.d; \
-sudo tee /etc/systemd/system/google-shutdown-scripts.service.d/override.conf > /dev/null <<EOF
+[ ! -d /etc/systemd/system/google-shutdown-scripts.service.d ] && \
+mkdir -p /etc/systemd/system/google-shutdown-scripts.service.d; \
+tee /etc/systemd/system/google-shutdown-scripts.service.d/override.conf > /dev/null <<EOF
 [Unit]
 After=docker.service
 After=docker.socket
-EOF"
+EOF
 
 # Wait for transferring the docker base image (generate_container_host_image.py)
-echo "touch /started"
+touch /started
 
 # Load docker base image
-echo "while ! [ -f /data_transferred ]; do sleep 1; done"
-echo "sudo docker load -i /tmp/tmp_docker_file"
+while ! [ -f /data_transferred ]; do sleep 1; done
+docker load -i /tmp/tmp_docker_file
 
 # build current user into container
-VERSION=$(cat VERSION)
-docker_base_image=$(cat DOCKER_SRC)
-echo "sudo docker build -t broadinstitute/slurm_gcp_docker:$VERSION \
+docker build -t broadinstitute/slurm_gcp_docker:$VERSION \
   -t broadinstitute/slurm_gcp_docker:latest \
-  --build-arg HOST_USER=$USER --build-arg UID=$UID --build-arg GID=$(id -g) \
+  --build-arg HOST_USER=$USER --build-arg UID=$UID --build-arg GID=$EGID \
   --build-arg DOCKER_BASE_IMAGE=$docker_base_image:$VERSION \
-  /usr/local/share/slurm_gcp_docker/src"
+  /usr/local/share/slurm_gcp_docker/src
 
-echo "touch /completed"
+touch /completed

@@ -40,7 +40,9 @@ def get_current_zone():
     zone = re.sub(".*/", "", zone)
     return zone
 
-def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="n1-standard-4", boot_disk_size=200):
+def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="n1-standard-4",
+                          startup_script=os.path.join(this_dir, "oslogin_startup_script.sh"),
+                          boot_disk_size=200):
     if project is None:
         project = get_current_project()
     if zone is None:
@@ -63,8 +65,8 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
             --boot-disk-type pd-standard \
             --scopes cloud-platform,compute-rw \
             --tags=wolfcontroller \
-            --metadata=enable-oslogin=TRUE,wolfuser={wolfuser}"
-            #--metadata-from-file startup-script={startup_script},shutdown-script={shutdown_script} \
+            --metadata=enable-oslogin=TRUE,wolfuser={wolfuser} \
+            --metadata-from-file=startup-script={startup_script}"
             , shell=True
     )
 
