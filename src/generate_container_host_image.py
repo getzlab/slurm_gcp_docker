@@ -75,10 +75,10 @@ if __name__ == "__main__":
 	# generate startup script string
 	build_script = Template(args.build_script.read().strip())
 	build_script_args = {"USER": os.environ["USER"],
-                             "UID": os.getuid(),
-                             "EGID": os.getegid(),
-                             "docker_base_image": open("DOCKER_SRC").read().rstrip(),
-                             "VERSION": open("VERSION").read().rstrip()}
+	                     "UID": os.getuid(),
+	                     "EGID": os.getegid(),
+	                     "docker_base_image": open("DOCKER_SRC").read().rstrip(),
+	                     "VERSION": open("VERSION").read().rstrip()}
 
 	#
 	# create dummy instance to build image in
