@@ -7,16 +7,17 @@ import subprocess
 import sys
 import shlex
 import tempfile
+from string import Template
 
 def parse_args(zone, project):
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--imagename', '-i', help = "Name of image to create", required = True)
-	parser.add_argument('--zone', '-z', help = "Compute zone to create dummy instance in", default = zone)
-	parser.add_argument('--project', '-p', help = "Compute project to create image in", default = project)
-	parser.add_argument('--dummyhost', '-d', help = "Name of dummy VM image gets built on", default = "dummyhost")
-	parser.add_argument('--build_script', '-s', help = "Path to build script whose output is run on the dummy VM", default = "./container_host_image_startup_script.sh")
-	parser.add_argument('--dont_copy_gcloud_credentials', '-g', help = "Skip copying of gcloud credentials", action = "store_false", dest = "copy_gcloud_credentials")
-	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker")
+	parser.add_argument('--imagename', '-i', help="Name of image to create", required=True)
+	parser.add_argument('--zone', '-z', help="Compute zone to create dummy instance in", default=zone)
+	parser.add_argument('--project', '-p', help="Compute project to create image in", default=project)
+	parser.add_argument('--dummyhost', '-d', help="Name of dummy VM image gets built on", default="dummyhost")
+	parser.add_argument('--build_script', '-s', help="Path to build script whose output is run on the dummy VM", default="./container_host_image_startup_script.sh", type=argparse.FileType('r'))
+	parser.add_argument('--dont_copy_gcloud_credentials', '-g', help="Skip copying of gcloud credentials", action="store_false", dest="copy_gcloud_credentials")
+	parser.add_argument('--image_family', '-f', help="Family to add image to", default="slurm-gcp-docker")
 
 	args = parser.parse_args()
 
@@ -41,9 +42,9 @@ if __name__ == "__main__":
 	#
 	# ensure gcloud is installed
 	try:
-		subprocess.check_call("[ -f ~/.config/gcloud/config_sentinel ]", shell = True)
+		subprocess.check_call("[ -f ~/.config/gcloud/config_sentinel ]", shell=True)
 	except subprocess.CalledProcessError:
-		print("gcloud is not configured. Please run `gcloud auth login` and `gcloud auth application-default login` and try again.", file = sys.stderr)
+		print("gcloud is not configured. Please run `gcloud auth login` and `gcloud auth application-default login` and try again.", file=sys.stderr)
 		sys.exit(1)
 
 	#
@@ -71,14 +72,23 @@ if __name__ == "__main__":
 	host = args.dummyhost + "-" + os.environ["USER"]
 
 	#
+	# generate startup script string
+	build_script = Template(args.build_script.read().strip())
+	build_script_args = {"USER": os.environ["USER"],
+                             "UID": os.getuid(),
+                             "EGID": os.getegid(),
+                             "docker_base_image": open("DOCKER_SRC").read().rstrip(),
+                             "VERSION": open("VERSION").read().rstrip()}
+
+	#
 	# create dummy instance to build image in
 	try:
 		subprocess.check_call("""gcloud compute --project {proj} instances create {host} --zone {zone} \
 		  --machine-type n1-standard-1 --image ubuntu-minimal-2204-jammy-v20221018 \
 		  --image-project ubuntu-os-cloud --boot-disk-size 15GB --boot-disk-type pd-standard \
-		  --metadata-from-file startup-script=<({build_script})""".format(
-			host = host, proj = proj, zone = zone, build_script = args.build_script
-		), shell = True, executable = "/bin/bash")
+		  --metadata startup-script={build_script}""".format(
+			host=host, proj=proj, zone=zone, build_script=shlex.quote(build_script.safe_substitute(build_script_args))
+		), shell=True)
 
 		#
 		# wait for instance to be ready
@@ -89,8 +99,8 @@ if __name__ == "__main__":
 			  sleep 1
 			  echo -n ".";
 		  done
-		  echo""".format(host = host, zone = zone),
-		  shell = True, executable = "/bin/bash"
+		  echo""".format(host=host, zone=zone),
+		  shell=True, executable="/bin/bash"
 		)
 
 		#
@@ -101,8 +111,8 @@ if __name__ == "__main__":
 			  gcloud compute scp ~/.config/gcloud/* {host}:.config/gcloud --zone {zone} --recurse && \
 			  gcloud compute ssh {host} --zone {zone} -- -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" -T \
 				"sudo cp -r ~/.config/gcloud /etc/gcloud"
-			  """.format(host = host, zone = zone),
-			  shell = True
+			  """.format(host=host, zone=zone),
+			  shell=True
 			)
 
 		#
@@ -110,7 +120,7 @@ if __name__ == "__main__":
 		print("Copying slurm_gcp_docker source to dummy host ...")
 		subprocess.check_call(
 			"gcloud compute scp {src} {host}:/tmp/tmp_slurm_gcp_docker --zone {zone} --recurse".format(
-				src=shlex.quote(get_slurm_gcp_docker_root()), host = host, zone = zone
+				src=shlex.quote(get_slurm_gcp_docker_root()), host=host, zone=zone
 			),
 			shell=True
 		)
@@ -118,8 +128,8 @@ if __name__ == "__main__":
 		#
 		# transfer docker image there
 		print("Transfering slurm docker image to dummy host ...")
-		DOCKER_SRC = open("DOCKER_SRC").read().rstrip()
-		VERSION = open("VERSION").read().rstrip()
+		DOCKER_SRC = build_script_args["docker_base_image"]
+		VERSION = build_script_args["VERSION"]
 
 		tmp = tempfile.mktemp()
 		subprocess.check_call("sudo docker save {}:{} > {}".format(DOCKER_SRC, VERSION, tmp), shell=True)
@@ -130,7 +140,7 @@ if __name__ == "__main__":
 		# mark data transferred
 		subprocess.check_call(
 			'gcloud compute ssh {host} --zone {zone} -- -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" -T \
-				"sudo cp -r /tmp/tmp_slurm_gcp_docker/ /usr/local/share/slurm_gcp_docker/ && sudo touch /data_transferred"'.format(host = host, zone = zone),
+				"sudo cp -r /tmp/tmp_slurm_gcp_docker/ /usr/local/share/slurm_gcp_docker/ && sudo touch /data_transferred"'.format(host=host, zone=zone),
 			shell=True
 		)
 
@@ -143,8 +153,8 @@ if __name__ == "__main__":
 			  sleep 1
 			  echo -n ".";
 		  done
-		  echo""".format(host = host, zone = zone),
-		  shell = True, executable = "/bin/bash"
+		  echo""".format(host=host, zone=zone),
+		  shell=True, executable="/bin/bash"
 		)
 
 		#
@@ -152,8 +162,8 @@ if __name__ == "__main__":
 		# (this is to avoid disk caching problems that can arise from imaging a running
 		# instance)
 		subprocess.check_call(
-		  "gcloud compute instances stop {host} --zone {zone} --quiet".format(host = host, zone = zone),
-		  shell = True
+		  "gcloud compute instances stop {host} --zone {zone} --quiet".format(host=host, zone=zone),
+		  shell=True
 		)
 
 		#
@@ -161,29 +171,29 @@ if __name__ == "__main__":
 		try:
 			print("Snapshotting dummy host drive ...")
 			subprocess.check_call(
-			  "gcloud compute disks snapshot {host} --snapshot-names {host}-snap --zone {zone}".format(host = host, zone = zone),
-			  shell = True
+			  "gcloud compute disks snapshot {host} --snapshot-names {host}-snap --zone {zone}".format(host=host, zone=zone),
+			  shell=True
 			)
 
 			print("Creating image from snapshot ...")
 			# TODO: add check here to only try and delete the image if it already exists
 			try:
-				subprocess.check_call("gcloud compute images delete --quiet {imagename}".format(imagename = imagename), shell = True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+				subprocess.check_call("gcloud compute images delete --quiet {imagename}".format(imagename=imagename), shell=True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 			except subprocess.CalledProcessError:
 				pass
 			subprocess.check_call(
-			  "gcloud compute images create {imagename} --source-snapshot={host}-snap --family {image_family}-$USER".format(imagename = imagename, host = host, image_family = args.image_family),
-			  shell = True
+			  "gcloud compute images create {imagename} --source-snapshot={host}-snap --family {image_family}-$USER".format(imagename=imagename, host=host, image_family=args.image_family),
+			  shell=True
 			)
 		finally:
 			print("Deleting snapshot ...")
-			subprocess.check_call("gcloud compute snapshots delete {}-snap --quiet".format(host), shell = True)
+			subprocess.check_call("gcloud compute snapshots delete {}-snap --quiet".format(host), shell=True)
 
 	#
 	# delete dummy host
 	finally:
 		print("Deleting dummy host ...")
 		subprocess.check_call(
-		  "gcloud compute instances delete {host} --zone {zone} --quiet".format(host = host, zone = zone),
-		  shell = True
+		  "gcloud compute instances delete {host} --zone {zone} --quiet".format(host=host, zone=zone),
+		  shell=True
 		)
