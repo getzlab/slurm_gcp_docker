@@ -29,14 +29,24 @@ if ! [ -f /.startup ]; then
     sudo chmod 777 /mnt/nfs
 
     sudo apt-get -qq update
-    sudo apt-get -qq -y install nfs-common docker.io python3-pip nfs-kernel-server git python3-venv
-    sudo pip3 install docker-compose google-crc32c
+    sudo apt-get -qq -y install nfs-common docker.io nfs-kernel-server git python3-venv python3-pip
+    sudo rm -rf /usr/lib/python3/dist-packages/OpenSSL/ # OpenSSL cypro causes issues with pip installation of docker-compose, leading to a broken pip
+	sudo pip3 install docker-compose google-crc32c
 
     echo '* hard nofile 6400' | sudo tee -a /etc/security/limits.conf > /dev/null
     echo '* soft nofile 6400' | sudo tee -a /etc/security/limits.conf > /dev/null
 
     sudo groupadd docker || true
     sudo usermod -aG docker $USER
+
+	## install nvidia gpu driver
+	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nvidia-driver-450
+	DISTRIBUTION=$(. /etc/os-release;echo $ID$VERSION_ID) \
+		  && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+		  && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$DISTRIBUTION/libnvidia-container.list | \
+			 sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+			 sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+	sudo apt-get update && sudo apt-get install -y nvidia-docker2 && sudo systemctl restart docker
 
     ## enable docker experimental features
     echo '{"experimental": true}' | sudo tee -a /etc/docker/daemon.json > /dev/null
