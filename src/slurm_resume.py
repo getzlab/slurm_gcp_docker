@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pandas as pd
+import numpy as np
 import os
 import sys
 import subprocess
@@ -31,10 +32,10 @@ hosts = subprocess.check_output("scontrol show hostnames {}".format(sys.argv[1])
 # For nonpreemptible partition, partition_name == machine_type + "-nonp"
 def map_partition_machinetype(partition):
 	if partition.endswith("-nonp"):
-                return partition[:-len("-nonp")]
-        elif partition.contains("-nonp-"):
-                return partition.split("-nonp-")[0]
-        else:
+		return partition[:-len("-nonp")]
+	elif "-nonp-" in partition:
+		return partition.split("-nonp-")[0]
+	else:
 		return partition
 
 # increase disk size so that: 1. match disk io with network io; 2. allow workloads that
@@ -53,35 +54,35 @@ def map_partition_disksize(partition):
 # create all the nodes of each machine type at once
 # XXX: gcloud assumes that sys.stdin will always be not None, so we need to pass
 #      dummy stdin (/dev/null)
-for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible",
-                                                   "accelerator_count", "accelerator_type"], dropna=False):
+for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible", "accelerator_count", "accelerator_type"], dropna=False):
 	machine_type, not_nonpreemptible_part, acc_count, acc_type = key
 	machine_type = map_partition_machinetype(machine_type)
 	disk_size = "25GB"
 
 	# override 'preemptible' flag if this node is in the "non-preemptible" partition
 	if not not_nonpreemptible_part:
-	    k9_backend_conf['preemptible'] = ''
+		k9_backend_conf['preemptible'] = ''
 	else:
-	    k9_backend_conf['preemptible'] = default_preemptible_flag
+		k9_backend_conf['preemptible'] = default_preemptible_flag
 
-        # set accelerator flags if neccessary
-        accelerator_flags = ""
-        if not np.isnan(acc_count)
-            acc_count = int(acc_count)
-            accelerator_flags = f"--accelerator=count={acc_count},type={acc_type}"
+	# set accelerator flags if neccessary
+	accelerator_flags = ""
+	if isinstance(acc_count, str):
+		disk_size = "50GB" # cuda images are heavy, scale up boot disk to accomodate
+		acc_count = int(acc_count)
+		accelerator_flags = f"--accelerator=count={acc_count},type={acc_type} --maintenance-policy=TERMINATE"
 
 	host_table = subprocess.Popen(
 	  """gcloud compute instances create {HOST_LIST} --image {image} \
-	     --machine-type {MT} --zone {compute_zone} {compute_script} {preemptible} \
-         --boot-disk-size {DISK_SIZE} {accelerator_flags} \
-	     --tags caninetransientimage --format 'csv(name,networkInterfaces[0].networkIP)'
+		 --machine-type {MT} --zone {compute_zone} {compute_script} {preemptible} \
+		 --boot-disk-size {DISK_SIZE} {accelerator_flags} \
+		 --tags caninetransientimage --format 'csv(name,networkInterfaces[0].networkIP)'
 	  """.format(
-	    HOST_LIST = " ".join(host_list.index), MT = machine_type, DISK_SIZE = disk_size,
-            accelerator_flags = accelerator_flags, **k9_backend_conf
+		HOST_LIST = " ".join(host_list.index), MT = machine_type, DISK_SIZE = disk_size,
+		accelerator_flags = accelerator_flags, **k9_backend_conf
 	  ), shell = True, executable = '/bin/bash', stdin = subprocess.DEVNULL, stdout = subprocess.PIPE
 	)
-        
+		
 	# update DNS (hostname -> internal IP)
 	# TODO: replace this with SlurmctldParameters=cloud_dns in slurm.conf
 	host_table = pd.read_csv(host_table.stdout)
