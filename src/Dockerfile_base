@@ -69,7 +69,7 @@ COPY ./conf/ /usr/local/share/slurm_gcp_docker/conf/
 RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
 RUN wget -O libsubid4.dpkg http://mirrors.kernel.org/ubuntu/pool/main/s/shadow/libsubid4_4.11.1+dfsg1-2ubuntu1_amd64.deb && \
   dpkg -i libsubid4.dpkg
-RUN wget -O podman.dpkg http://ftp.us.debian.org/debian/pool/main/libp/libpod/podman_4.3.1+ds1-2_amd64.deb && \
+RUN wget -O podman.dpkg http://ftp.us.debian.org/debian/pool/main/libp/libpod/podman_4.3.1+ds1-5+b1_amd64.deb && \
   dpkg -i podman.dpkg && apt-get install -y fuse-overlayfs iptables
 
 COPY src/podman_conf/*.conf /etc/containers/

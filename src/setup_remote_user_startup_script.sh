@@ -30,6 +30,7 @@ if ! [ -f /.startup ]; then
 
     sudo apt-get -qq update
     sudo apt-get -qq -y install nfs-common docker.io python3-pip nfs-kernel-server git python3-venv
+	sudo rm -rf /usr/lib/python3/dist-packages/OpenSSL/ # OpenSSL cypro causes issues with pip installation of docker-compose, leading to a broken pip
     sudo pip3 install docker-compose google-crc32c
 
     echo '* hard nofile 6400' | sudo tee -a /etc/security/limits.conf > /dev/null
