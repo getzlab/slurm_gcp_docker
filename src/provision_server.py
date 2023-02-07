@@ -144,7 +144,8 @@ if __name__ == "__main__":
 
 	C["PartitionName887"] = "main Nodes={} Default=YES".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "main"]["nodes"]))
 	C["PartitionName888"] = "nonpreemptible Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "nonpreemptible"]["nodes"]))
-	C["PartitionName889"] = "gpu Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "gpu"]["nodes"]))
+	if len(NODE_TYPES.loc[NODE_TYPES["partition2"] == "gpu"]) > 0: # only add gpu partition if nodes exist
+		C["PartitionName889"] = "gpu Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "gpu"]["nodes"]))
 	C["PartitionName999"] = "all Nodes={} Default=NO".format(",".join(NODE_TYPES["nodes"]))
 
 	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurm.conf")
