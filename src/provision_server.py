@@ -73,7 +73,7 @@ if __name__ == "__main__":
 	  "/mnt/nfs/workspace"
 	]:
 		subprocess.check_call("""
-		  [ ! -d """ + d + " ] && mkdir -p " + d + """ ||
+		  [ ! -d """ + d + " ] && sudo mkdir -p " + d + """ ||
 			true
 		  """, shell = True, executable = '/bin/bash')
 
