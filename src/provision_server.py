@@ -67,6 +67,7 @@ if __name__ == "__main__":
 	for d in [
 	  "/mnt/nfs/clust_conf/slurm",
 	  "/mnt/nfs/clust_conf/canine",
+	  "/mnt/nfs/clust_conf/gcloud",
 	  "/mnt/nfs/clust_scripts",
 	  "/mnt/nfs/clust_logs",
 	  "/mnt/nfs/workspace"
