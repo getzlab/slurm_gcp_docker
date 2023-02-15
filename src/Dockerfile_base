@@ -69,11 +69,20 @@ COPY ./conf/ /usr/local/share/slurm_gcp_docker/conf/
 RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
 RUN wget -O libsubid4.dpkg http://mirrors.kernel.org/ubuntu/pool/main/s/shadow/libsubid4_4.11.1+dfsg1-2ubuntu1_amd64.deb && \
   dpkg -i libsubid4.dpkg
-RUN wget -O podman.dpkg http://ftp.us.debian.org/debian/pool/main/libp/libpod/podman_4.3.1+ds1-5+b1_amd64.deb && \
+RUN wget -O podman.dpkg https://storage.googleapis.com/getzlab-wolf/podman/podman_4.3.1.dpkg && \
   dpkg -i podman.dpkg && apt-get install -y fuse-overlayfs iptables
 
 COPY src/podman_conf/*.conf /etc/containers/
 COPY src/podman_conf/registries.conf.d/* /etc/containers/registries.conf.d/
+
+# 10.5 get nvidia toolkits for podman
+RUN distribution=$(. /etc/os-release;echo $ID$VERSION_ID)  && curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add - \
+    && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+RUN sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+
+RUN mkdir -p /usr/share/containers/oci/hooks.d/
+COPY conf/nvidia_hook_config.txt /usr/share/containers/oci/hooks.d/oci-nvidia-hook.json
+RUN sed -i 's/^#no-cgroups = false/no-cgroups = true/;' /etc/nvidia-container-runtime/config.toml
 
 # 11. sudo for all
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers

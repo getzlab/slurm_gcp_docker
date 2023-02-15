@@ -20,6 +20,18 @@ sudo /gcsdk/google-cloud-sdk/install.sh --usage-reporting false --path-update tr
 sudo ln -s /gcsdk/google-cloud-sdk/bin/* /usr/bin
 EOF
 
+cat <<'EOF'
+#NVIDIA DRIVER
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nvidia-driver-450
+export distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+      && curl -s -L https://nvidia.github.io/libnvidia-container/experimental/$distribution/libnvidia-container.list | \
+         sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+         sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt-get update
+sudo apt-get install -y nvidia-docker2
+EOF
+
 # make sure shutdown script that tells Slurm controller node is going offline
 # runs before the Docker daemon shuts down
 echo "[ ! -d /etc/systemd/system/google-shutdown-scripts.service.d ] && \

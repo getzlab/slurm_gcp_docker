@@ -121,6 +121,16 @@ if __name__ == "__main__":
 	NODE_TYPES["nodes"]       = NODE_TYPES.apply(lambda row: "{HN}-worker[{range_start}-{range_end}]".format(HN=ctrl_hostname, **row), axis=1)
 	NODE_TYPES["partition1"]  = np.where(NODE_TYPES["preemptible"], NODE_TYPES["type"], NODE_TYPES["type"] + "-nonp")
 	NODE_TYPES["partition2"]  = np.where(NODE_TYPES["preemptible"], "main", "nonpreemptible")
+	
+	# if no accelerator nodes, add nan columns
+	if 'accelerator_count' not in NODE_TYPES.columns or 'accelerator_type' not in NODE_TYPES.columns:
+		NODE_TYPES['accelerator_count'] = np.nan
+		NODE_TYPES['accelerator_type'] = np.nan
+
+	# account for gpu nodes
+	gpu_idxs = ~NODE_TYPES["accelerator_count"].isnull()
+	NODE_TYPES.loc[gpu_idxs, 'partition1'] += '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_count"].astype(int).astype(str) + '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_type"]
+	NODE_TYPES.loc[gpu_idxs, 'partition2'] = 'gpu'
 
 	# node definitions
 	for idx, row in NODE_TYPES.iterrows():
@@ -132,13 +142,15 @@ if __name__ == "__main__":
 	for idx, row in NODE_TYPES.iterrows():
 		C["PartitionName" + str(idx+1)] = "{partition1} Nodes={nodes}".format(HN=ctrl_hostname, **dict(row))
 
-	C["PartitionName888"] = "main Nodes={} Default=YES".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "main"]["nodes"]))
-	C["PartitionName889"] = "nonpreemptible Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "nonpreemptible"]["nodes"]))
+	C["PartitionName887"] = "main Nodes={} Default=YES".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "main"]["nodes"]))
+	C["PartitionName888"] = "nonpreemptible Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "nonpreemptible"]["nodes"]))
+	if len(NODE_TYPES.loc[NODE_TYPES["partition2"] == "gpu"]) > 0: # only add gpu partition if nodes exist
+		C["PartitionName889"] = "gpu Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "gpu"]["nodes"]))
 	C["PartitionName999"] = "all Nodes={} Default=NO".format(",".join(NODE_TYPES["nodes"]))
 
 	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurm.conf")
 
-	nonstandardparts = ["all", "main", "nonpreemptible"]
+	nonstandardparts = ["all", "main", "nonpreemptible", "gpu"]
 
 	#
 	# save node lookup table
@@ -150,12 +162,17 @@ if __name__ == "__main__":
 	parts = parts.loc[~parts["start"].isna() & (~parts["partition"].isin(nonstandardparts))].astype({ "start" : int, "end" : int })
 
 	nonpreemptible_range = list(itertools.chain(*[range(x, y + 1) for x, y in parts.loc[parts["partition"].str.contains(r"-nonp$"), ["start", "end"]].values]))
+	gpu_range =  list(itertools.chain(*[range(x, y + 1) for x, y in parts.loc[parts["partition"].str.contains(r"-nonp-\d-.*"),["start", "end"]].values]))
+	nonpreemptible_range += gpu_range
 
 	nodes = []
 	for part in parts.itertuples():
 		nodes.append(pd.DataFrame([[part.partition, False if x in nonpreemptible_range else True, part.prefix + str(x)] for x in range(part.start, part.end + 1)], columns = ["machine_type", "preemptible", "idx"]))
 	nodes = pd.concat(nodes).set_index("idx")
 
+	# add in gpu columns
+	nodes = parsein(nodes, "machine_type", r".*nonp-(\d+)-(.*)$", ["accelerator_count", "accelerator_type"])
+	
 	nodes.to_pickle("/mnt/nfs/clust_conf/slurm/host_LuT.pickle")
 
 	#
