@@ -6,5 +6,5 @@
     { "type":  "n1-highmem-8", "cpus":  "8", "realmemory":  "50200", "weight": "4" , "number":  100, "preemptible":  false },
     { "type": "n1-highmem-32", "cpus": "32", "realmemory": "204200", "weight": "4" , "number":   10, "preemptible":  false },
     { "type": "n1-highmem-16", "cpus": "16", "realmemory": "102000", "weight": "5" , "number":   10, "preemptible":  false, "accelerator_count": 1, "accelerator_type": "nvidia-tesla-t4" },
-    { "type": "n1-highmem-32", "cpus": "32", "realmemory": "204200", "weight": "5" , "number":   10, "preemptible":  false, "accelerator_count": 1, "accelerator_type": "nvidia-tesla-t4" }
+    { "type": "n1-highmem-32", "cpus": "32", "realmemory": "204200", "weight": "6" , "number":   10, "preemptible":  false, "accelerator_count": 1, "accelerator_type": "nvidia-tesla-t4" }
 ]
