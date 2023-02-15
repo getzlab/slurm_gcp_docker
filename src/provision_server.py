@@ -128,8 +128,8 @@ if __name__ == "__main__":
 		NODE_TYPES['accelerator_type'] = np.nan
 
 	# account for gpu nodes
-	gpu_idxs = NODE_TYPES.loc[lambda x: ~x.accelerator_count.isnull()].index
-	NODE_TYPES.loc[gpu_idxs, 'partition1'] += '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_count"].astype(int).astype(str) + '-' +NODE_TYPES.loc[gpu_idxs, "accelerator_type"]
+	gpu_idxs = ~NODE_TYPES["accelerator_count"].isnull()
+	NODE_TYPES.loc[gpu_idxs, 'partition1'] += '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_count"].astype(int).astype(str) + '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_type"]
 	NODE_TYPES.loc[gpu_idxs, 'partition2'] = 'gpu'
 
 	# node definitions
