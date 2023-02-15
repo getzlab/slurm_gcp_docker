@@ -3,7 +3,7 @@
 # runs inside each worker container, checks every 5 minutes if the container is
 # healthy. if not, blacklist this node.
 
-export CLOUDSDK_CONFIG=/mnt/nfs/clust_conf/gcloud
+export CLOUDSDK_CONFIG=/mnt/nfs/credentials/gcloud
 
 # get zone of instance
 ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2> /dev/null))

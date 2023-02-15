@@ -105,7 +105,7 @@ ENTRYPOINT /usr/local/share/slurm_gcp_docker/src/docker_entrypoint_controller.sh
 #
 # set Slurm/gcloud environment (both paths will be updated via Canine backend)
 ENV SLURM_CONF "/mnt/nfs/clust_conf/slurm/slurm.conf"
-ENV CLOUDSDK_CONFIG "/mnt/nfs/clust_conf/gcloud"
+ENV CLOUDSDK_CONFIG "/mnt/nfs/credentials/gcloud"
 # TODO: do we still need CLOUDSDK_CONFIG in other files?
 
 #
