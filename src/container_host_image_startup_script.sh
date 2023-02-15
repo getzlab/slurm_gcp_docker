@@ -1,23 +1,14 @@
 #!/bin/bash
 
-# install NFS, Docker, associated files, gcloud
-cat <<EOF
+# install NFS, Docker, cgroups
+cat <<'EOF'
 # NFS
 sudo apt-get update && sudo apt-get -y install git nfs-kernel-server nfs-common portmap ssed iptables && \
 # DOCKER
-sudo groupadd -g 1338 docker && \
 sudo apt-get install -y docker.io && \
-sudo chmod 666 /var/run/docker.sock
 # ENABLE CGROUPS
 sudo ssed -R -i '/GRUB_CMDLINE_LINUX=/s/(.*)"(.*)"(.*)/\1"\2 cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0"\3/' /etc/default/grub && \
-sudo update-grub && \
-# INSTALL GCLOUD
-[ ! -d ~$USER/.config/gcloud ] && sudo -u $USER mkdir -p ~$USER/.config/gcloud
-sudo mkdir /gcsdk && \
-sudo wget -O gcs.tgz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-318.0.0-linux-x86_64.tar.gz && \
-sudo tar xzf gcs.tgz -C /gcsdk && \
-sudo /gcsdk/google-cloud-sdk/install.sh --usage-reporting false --path-update true --quiet && \
-sudo ln -s /gcsdk/google-cloud-sdk/bin/* /usr/bin
+sudo update-grub
 EOF
 
 cat <<'EOF'
@@ -42,20 +33,8 @@ After=docker.service
 After=docker.socket
 EOF"
 
-# Wait for transferring the docker base image (generate_container_host_image.py)
+# Wait for transferring the Slurm Docker
 echo "touch /started"
-
-# Load docker base image
 echo "while ! [ -f /data_transferred ]; do sleep 1; done"
 echo "sudo docker load -i /tmp/tmp_docker_file"
-
-# build current user into container
-VERSION=$(cat VERSION)
-docker_base_image=$(cat DOCKER_SRC)
-echo "sudo docker build -t broadinstitute/slurm_gcp_docker:$VERSION \
-  -t broadinstitute/slurm_gcp_docker:latest \
-  --build-arg HOST_USER=$USER --build-arg UID=$UID --build-arg GID=$(id -g) \
-  --build-arg DOCKER_BASE_IMAGE=$docker_base_image:$VERSION \
-  /usr/local/share/slurm_gcp_docker/src"
-
 echo "touch /completed"
