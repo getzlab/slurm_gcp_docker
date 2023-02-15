@@ -103,8 +103,10 @@ RUN apt-get -y remove build-essential vim git && apt-get -y autoremove
 ENTRYPOINT /usr/local/share/slurm_gcp_docker/src/docker_entrypoint_controller.sh
 
 #
-# set Slurm environment
+# set Slurm/gcloud environment (both paths will be updated via Canine backend)
 ENV SLURM_CONF "/mnt/nfs/clust_conf/slurm/slurm.conf"
+ENV CLOUDSDK_CONFIG "/mnt/nfs/clust_conf/gcloud"
+# TODO: do we still need CLOUDSDK_CONFIG in other files?
 
 #
 # update PATH environment
