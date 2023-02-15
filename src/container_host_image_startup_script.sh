@@ -30,7 +30,6 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
          sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 sudo apt-get update
 sudo apt-get install -y nvidia-docker2
-sudo systemctl restart docker
 EOF
 
 # make sure shutdown script that tells Slurm controller node is going offline
