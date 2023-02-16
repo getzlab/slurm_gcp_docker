@@ -58,12 +58,17 @@ def check_docker():
         docker is not installed, please first run:
             sudo apt-get update && sudo apt-get install docker.io  """)
     try:
+        subprocess.check_call("sudo docker info", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        error("""\
+        Docker is misconfigured! Please verify that it is properly installed.
+        """)
+    try:
         subprocess.check_call("docker info", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        ## TODO: I think we should avoid this issue by always using "sudo docker"
         error("""\
-        Error running docker command, you may try the following command and re-login:
-            sudo groupadd docker; sudo usermod -aG docker $USER
+        You need to add your username to the `docker` group to allow sudoless Docker.
+        Please run `sudo groupadd docker; sudo usermod -aG docker $USER` and login again.
         """)
 
 if __name__ == "__main__":
