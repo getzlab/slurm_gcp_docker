@@ -101,7 +101,11 @@ if __name__ == "__main__":
 	  shell = True
 	)
 
-	# TODO: copy the tool to run
+    # resume/suspend scripts need to be 755 for Slurm to recognize them
+	subprocess.check_call(
+	  "chmod 755 /mnt/nfs/clust_scripts/slurm_{suspend,resume}*",
+	  shell = True, executable = "/bin/bash"
+	)
 
 	#
 	# setup Slurm config files
