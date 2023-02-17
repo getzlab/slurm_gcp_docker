@@ -74,7 +74,10 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 
 	host_table = subprocess.Popen(
 	  """gcloud compute instances create {HOST_LIST} --image {image} \
-		 --machine-type {MT} --zone {compute_zone} {compute_script} {preemptible} \
+		 --machine-type {MT} \
+         --metadata-from-file startup-script=/mnt/nfs/clust_scripts/worker_startup_script.sh \
+         --metadata-from-file shutdown-script=/mnt/nfs/clust_scripts/worker_shutdown_script.sh \
+         --zone {compute_zone} {preemptible} \
 		 --boot-disk-size {DISK_SIZE} {ACCELERATOR_FLAGS} \
 		 --tags caninetransientimage --format 'csv(name,networkInterfaces[0].networkIP)'
 	  """.format(
