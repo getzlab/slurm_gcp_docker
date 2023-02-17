@@ -7,6 +7,8 @@ CONTROLLER_NAME=$(curl "http://metadata.google.internal/computeMetadata/v1/insta
 
 echo "Starting NFS ..."
 
+[ ! -d /mnt/nfs ] && sudo mkdir -p /mnt/nfs
+
 # check if mount is stale
 timeout 30 stat -t /mnt/nfs &> /dev/null
 EC=$?
@@ -22,7 +24,6 @@ fi
 
 # otherwise, wait for mount to be ready (NFS server is starting up)
 echo -n "Waiting for NFS server to be ready ..."
-[ ! -d /mnt/nfs ] && sudo mkdir -p /mnt/nfs
 while ! mountpoint -q /mnt/nfs; do
 	sudo mount -o defaults,hard,intr ${CONTROLLER_NAME}:/mnt/nfs /mnt/nfs &> /dev/null
 	echo -n "."
