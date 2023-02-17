@@ -133,7 +133,7 @@ if __name__ == "__main__":
 		print("Transfering slurm docker image to dummy host ...")
 
 		tmp = tempfile.mktemp()
-		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:{} > {}".format(VERSION, tmp), shell=True)
+		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:latest broadinstitute/slurm_gcp_docker:{} > {}".format(VERSION, tmp), shell=True)
 		subprocess.check_call('gcloud compute scp {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute ssh {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(src=tmp, host=host, zone=zone), shell=True)
 		os.remove(tmp)
 
