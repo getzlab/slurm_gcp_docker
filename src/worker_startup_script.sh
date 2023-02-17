@@ -3,7 +3,7 @@
 set -e
 
 # mount NFS
-SHOST=$1
+CONTROLLER_NAME=$(curl "http://metadata.google.internal/computeMetadata/v1/instance/slurm-controller-hostname" -H "Metadata-Flavor: Google")
 
 echo "Starting NFS ..."
 
@@ -24,7 +24,7 @@ fi
 echo -n "Waiting for NFS server to be ready ..."
 [ ! -d /mnt/nfs ] && sudo mkdir -p /mnt/nfs
 while ! mountpoint -q /mnt/nfs; do
-	sudo mount -o defaults,hard,intr ${SHOST}:/mnt/nfs /mnt/nfs &> /dev/null
+	sudo mount -o defaults,hard,intr ${CONTROLLER_NAME}:/mnt/nfs /mnt/nfs &> /dev/null
 	echo -n "."
 	sleep 1
 done

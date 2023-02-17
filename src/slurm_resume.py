@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 import os
+import socket
 import sys
 import subprocess
 import pickle
@@ -77,12 +78,13 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 		 --machine-type {MT} \
          --metadata-from-file startup-script=/mnt/nfs/clust_scripts/worker_startup_script.sh \
          --metadata-from-file shutdown-script=/mnt/nfs/clust_scripts/worker_shutdown_script.sh \
+         --metadata slurm-controller-hostname={CONTROLLER_NAME} \
          --zone {compute_zone} {preemptible} \
 		 --boot-disk-size {DISK_SIZE} {ACCELERATOR_FLAGS} \
 		 --tags caninetransientimage --format 'csv(name,networkInterfaces[0].networkIP)'
 	  """.format(
 		HOST_LIST = " ".join(host_list.index), MT = machine_type, DISK_SIZE = disk_size,
-		ACCELERATOR_FLAGS = accelerator_flags, **k9_backend_conf
+		CONTROLLER_NAME = socket.gethostname(), ACCELERATOR_FLAGS = accelerator_flags, **k9_backend_conf
 	  ), shell = True, executable = '/bin/bash', stdin = subprocess.DEVNULL, stdout = subprocess.PIPE
 	)
 		
