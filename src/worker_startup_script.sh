@@ -3,7 +3,7 @@
 set -e
 
 # mount NFS
-CONTROLLER_NAME=$(curl "http://metadata.google.internal/computeMetadata/v1/instance/slurm-controller-hostname" -H "Metadata-Flavor: Google")
+CONTROLLER_NAME=$(curl "http://metadata.google.internal/computeMetadata/v1/instance/attributes/slurm-controller-hostname" -H "Metadata-Flavor: Google")
 
 echo "Starting NFS ..."
 

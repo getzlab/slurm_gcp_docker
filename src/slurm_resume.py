@@ -76,8 +76,7 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 	host_table = subprocess.Popen(
 	  """gcloud compute instances create {HOST_LIST} --image {image} \
 		 --machine-type {MT} \
-         --metadata-from-file startup-script=/mnt/nfs/clust_scripts/worker_startup_script.sh \
-         --metadata-from-file shutdown-script=/mnt/nfs/clust_scripts/worker_shutdown_script.sh \
+         --metadata-from-file startup-script=/mnt/nfs/clust_scripts/worker_startup_script.sh,shutdown-script=/mnt/nfs/clust_scripts/worker_shutdown_script.sh \
          --metadata slurm-controller-hostname={CONTROLLER_NAME} \
          --zone {compute_zone} {preemptible} \
 		 --boot-disk-size {DISK_SIZE} {ACCELERATOR_FLAGS} \
