@@ -23,7 +23,7 @@ add { "experimental": true } to /etc/docker/daemon.json
 	parser.add_argument('--zone', '-z', help = "Compute zone to create dummy instance in", default = zone)
 	parser.add_argument('--project', '-p', help = "Compute project to create image in", default = project)
 	parser.add_argument('--dummyhost', '-d', help = "Name of dummy VM image gets built on", default = "dummyhost")
-	parser.add_argument('--build_script', '-s', help = "Path to build script whose output is run on the dummy VM", default = "./container_host_image_startup_script.sh")
+	parser.add_argument('--build_script', '-s', help = "Path to build script whose output is run on the dummy VM", default = "./master_image_builder_dummy_vm_startup_script.sh")
 	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker")
 	parser.add_argument('--push_images', help = "Whether to push images to centeralized container regisitry/GCP project", action = "store_true")
 	parser.add_argument('--skip_vm_image_build', help = "Skip building the worker VM image, i.e. only build the Docker image", action = "store_true")
