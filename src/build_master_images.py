@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -9,6 +10,8 @@ import shlex
 import tempfile
 
 from test_controller_environment import check_gcloud_auth, check_docker, error
+
+VERSION = open("VERSION").read().rstrip()
 
 def parse_args(zone):
 	parser = argparse.ArgumentParser(description =
@@ -19,13 +22,13 @@ This is only used by developers updating core functionality of this software pac
 Note that the Docker daemon must have experimental features enabled;
 add { "experimental": true } to /etc/docker/daemon.json
 """, formatter_class = argparse.RawTextHelpFormatter)
-	parser.add_argument('--imagename', '-i', help = "Name of image to create", required = True)
+	parser.add_argument('--image_prefix', '-i', help = "Prefix of image name", default = "wolf-worker-image")
+	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker")
 	parser.add_argument('--zone', '-z', help = "Compute zone to create dummy instance in", default = zone)
 	parser.add_argument('--project', '-p', help = "Compute project to create image in", default = "broad-getzlab-workflows")
 	parser.add_argument('--dummyhost', '-d', help = "Name of dummy VM image gets built on", default = "dummyhost")
 	parser.add_argument('--build_script', '-s', help = "Path to build script whose output is run on the dummy VM", default = "./master_image_builder_dummy_vm_startup_script.sh")
-	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker")
-	parser.add_argument('--push_docker_image', help = "Whether to push Docker image to centeralized container regisitry", action = "store_true")
+	parser.add_argument('--skip_docker_image_push', help = "Whether to skip pushing Docker image to centeralized container regisitry", action = "store_true")
 	parser.add_argument('--skip_vm_image_build', help = "Skip building the worker VM image, i.e. only build the Docker image", action = "store_true")
 
 	args = parser.parse_args()
@@ -66,19 +69,22 @@ if __name__ == "__main__":
 	#
 	# parse arguments
 	args = parse_args(default_zone)
+
 	zone = args.zone
 	proj = args.project
-	imagename = args.imagename
+
+	image_version = re.sub(r"\.","-", VERSION)
+	githash = subprocess.check_output("git rev-parse --short HEAD", shell=True).rstrip().decode()
+	imagename = f"{args.image_prefix}-{image_version}-{githash}"
 
 	#
-	# get hostname
+	# make dummyhost hostname user-specific in the unlikely event that two users
+	# are building the image simultaneously
 	host = args.dummyhost + "-" + os.environ["USER"]
 
 	#
 	# 1. build Docker image
 	#
-
-	VERSION = open("VERSION").read().rstrip()
 
 	subprocess.check_call(f"""
 	  (cd .. &&
@@ -87,7 +93,7 @@ if __name__ == "__main__":
 		-f src/Dockerfile .)""", shell = True
 	)
 
-	if args.push_docker_images:
+	if not args.skip_docker_image_push:
 		subprocess.check_call(f"""
 		  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
 			gcr.io/broad-getzlab-workflows/slurm_gcp_docker:{VERSION} && \
