@@ -8,7 +8,7 @@ import sys
 import shlex
 import tempfile
 
-from setup_local import check_gcloud_auth, check_docker, error
+from test_controller_environment import check_gcloud_auth, check_docker, error
 
 def parse_args(zone):
 	parser = argparse.ArgumentParser(description =
