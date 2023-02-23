@@ -74,7 +74,7 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 		accelerator_flags = f"--accelerator=count={acc_count},type={acc_type} --maintenance-policy=TERMINATE"
 
 	host_table = subprocess.Popen(
-	  """gcloud compute instances create {HOST_LIST} --image {image} \
+	  """gcloud compute instances create {HOST_LIST} --image {image} --image-project {image_project} \
 		 --machine-type {MT} \
          --metadata-from-file startup-script=/mnt/nfs/clust_scripts/worker_startup_script.sh,shutdown-script=/mnt/nfs/clust_scripts/worker_shutdown_script.sh \
          --metadata slurm-controller-hostname={CONTROLLER_NAME} \
