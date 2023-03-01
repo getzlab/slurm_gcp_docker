@@ -107,7 +107,7 @@ ENTRYPOINT /sgcpd/src/docker_entrypoint_controller.sh
 #
 # set Slurm/gcloud environment (both paths will be updated via Canine backend)
 ENV SLURM_CONF "/mnt/nfs/clust_conf/slurm/slurm.conf"
-ENV CLOUDSDK_CONFIG "/global_gcloud_config"
+ENV CLOUDSDK_CONFIG "/user_gcloud_config"
 
 #
 # update PATH environment

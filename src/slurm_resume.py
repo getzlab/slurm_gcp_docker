@@ -22,7 +22,7 @@ default_preemptible_flag = k9_backend_conf['preemptible'] # this is '--preemptib
 os.environ["USER"] = "slurm"
 
 # export gcloud credential path
-os.environ["CLOUDSDK_CONFIG"] = "/global_gcloud_config"
+os.environ["CLOUDSDK_CONFIG"] = "/slurm_gcloud_config"
 
 # get list of nodenames to create
 hosts = subprocess.check_output("scontrol show hostnames {}".format(sys.argv[1]), shell = True).decode().rstrip().split("\n")
