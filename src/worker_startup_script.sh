@@ -32,4 +32,4 @@ done
 echo
 
 # start Slurm docker
-. /mnt/nfs/clust_scripts/docker_run.sh
+. /sgcpd/src/docker_run.sh

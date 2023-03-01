@@ -51,7 +51,7 @@ def print_conf(D, path, owner = None, perm = None):
 
 if __name__ == "__main__":
 	CLUST_PROV_ROOT = os.environ["CLUST_PROV_ROOT"] if "CLUST_PROV_ROOT" in os.environ \
-	                  else "/usr/local/share/slurm_gcp_docker"
+	                  else "/sgcpd"
 	#TODO: check if this is indeed a valid path
 
 	ctrl_hostname = socket.gethostname()
@@ -68,7 +68,6 @@ if __name__ == "__main__":
 	  "/mnt/nfs/clust_conf/slurm",
 	  "/mnt/nfs/clust_conf/canine",
 	  "/mnt/nfs/credentials/gcloud",
-	  "/mnt/nfs/clust_scripts",
 	  "/mnt/nfs/clust_logs",
 	  "/mnt/nfs/workspace"
 	]:
@@ -93,18 +92,6 @@ if __name__ == "__main__":
 	    CPR = shlex.quote(CLUST_PROV_ROOT)
 	  ),
 	  shell = True
-	)
-
-	# scripts
-	subprocess.check_call(
-	  "cp -r {CPR}/src/* /mnt/nfs/clust_scripts".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
-	  shell = True
-	)
-
-    # resume/suspend scripts need to be 755 for Slurm to recognize them
-	subprocess.check_call(
-	  "chmod 755 /mnt/nfs/clust_scripts/slurm_{suspend,resume}*",
-	  shell = True, executable = "/bin/bash"
 	)
 
 	#

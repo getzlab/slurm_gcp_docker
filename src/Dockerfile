@@ -61,9 +61,11 @@ RUN apt-get -y install unzip && \
   unzip awscliv2.zip && \
   sudo ./aws/install
 
-# 9. get cluster utility scripts (TODO: better moving Dockerfile_base to parent directory??)
+# 9. get cluster utility scripts
 COPY ./src/ /usr/local/share/slurm_gcp_docker/src/
 COPY ./conf/ /usr/local/share/slurm_gcp_docker/conf/
+RUN ln -s /usr/local/share/slurm_gcp_docker/ /sgcpd
+RUN chmod 755 /sgcpd/src/slurm_suspend_wrapper.sh /sgcpd/src/slurm_resume_wrapper.sh
 
 # 10. podman
 RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
@@ -100,7 +102,7 @@ RUN apt-get -y remove build-essential vim git && apt-get -y autoremove
 
 #
 # set entrypoint
-ENTRYPOINT /usr/local/share/slurm_gcp_docker/src/docker_entrypoint_controller.sh
+ENTRYPOINT /sgcpd/src/docker_entrypoint_controller.sh
 
 #
 # set Slurm/gcloud environment (both paths will be updated via Canine backend)
@@ -109,4 +111,4 @@ ENV CLOUDSDK_CONFIG "/global_gcloud_config"
 
 #
 # update PATH environment
-ENV PATH="/usr/local/share/slurm_gcp_docker/src/docker_bin:${PATH}"
+ENV PATH="/sgcpd/src/docker_bin:${PATH}"

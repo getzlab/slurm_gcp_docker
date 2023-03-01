@@ -16,4 +16,4 @@ cp -r $GCLOUD_PATHS $HOMEDIR/.config/gcloud && chown -R $HOST_USER:$HOST_USER $H
 
 # add Docker credentials to user's home directory
 [ ! -d $HOMEDIR/.docker ] && mkdir -p $HOMEDIR/.docker
-ln -s /usr/local/share/slurm_gcp_docker/conf/docker_config.json $HOMEDIR/.docker/config.json
+ln -s /sgcpd/conf/docker_config.json $HOMEDIR/.docker/config.json

@@ -13,7 +13,7 @@ export LOGFILE=/mnt/nfs/clust_logs/${HOSTNAME}.heartbeat.log
 [ -f $LOGFILE ] && rm -f $LOGFILE
 
 # run separate daemon to detect hung disks
-/usr/local/share/slurm_gcp_docker/src/hung_disk_daemon.py >> $LOGFILE 2>&1 &
+/sgcpd/src/hung_disk_daemon.py >> $LOGFILE 2>&1 &
 
 while true; do
 	# check if Podman is responsive
