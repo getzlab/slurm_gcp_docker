@@ -5,9 +5,7 @@ import subprocess, os, sys, re, shutil, textwrap, getpass
 def error(msg, dedent=True):
     if dedent:
         msg = textwrap.dedent(msg)
-    print(msg)
-    #print("\nPlease refer to https://github.com/getzlab/wolF/wiki/Setup for complete setup instructions")
-    sys.exit(1)
+    raise RuntimeError(msg)
 
 def check_gcloud_auth():
     # check if we even have gcloud
@@ -71,15 +69,8 @@ def check_docker():
         Please run `sudo groupadd docker; sudo usermod -aG docker $USER` and login again.
         """)
 
-if __name__ == "__main__":
+def check_all():
     check_docker()
     check_gcloud_auth()
     check_git()
     check_nfs()
-
-    VERSION = open("VERSION").read().rstrip()
-    IVERSION = re.sub(r"\.","-", VERSION)
-    gitrev = subprocess.check_output("git rev-parse --short HEAD", shell=True).rstrip().decode()
-
-    subprocess.check_call("./docker_build.sh {}".format(" ".join(sys.argv[1:])), shell=True)
-    subprocess.check_call("./generate_container_host_image.py -i slurm-gcp-docker-{}-{}-{}".format(IVERSION, gitrev, getpass.getuser()), shell=True)
