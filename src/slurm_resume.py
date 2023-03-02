@@ -75,13 +75,12 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 	  """gcloud compute instances create {HOST_LIST} --image {image} --image-project {image_project} \
 		 --machine-type {MT} \
          --metadata-from-file startup-script=/sgcpd/src/worker_startup_script.sh,shutdown-script=/sgcpd/src/worker_shutdown_script.sh \
-         --metadata slurm-controller-hostname={CONTROLLER_NAME} \
          --zone {compute_zone} {preemptible} \
 		 --boot-disk-size {DISK_SIZE} {ACCELERATOR_FLAGS} \
 		 --tags caninetransientimage --format 'csv(name,networkInterfaces[0].networkIP)'
 	  """.format(
 		HOST_LIST = " ".join(host_list.index), MT = machine_type, DISK_SIZE = disk_size,
-		CONTROLLER_NAME = socket.gethostname(), ACCELERATOR_FLAGS = accelerator_flags, **k9_backend_conf
+		ACCELERATOR_FLAGS = accelerator_flags, **k9_backend_conf
 	  ), shell = True, executable = '/bin/bash', stdin = subprocess.DEVNULL, stdout = subprocess.PIPE
 	)
 		

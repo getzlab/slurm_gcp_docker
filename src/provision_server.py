@@ -57,10 +57,6 @@ if __name__ == "__main__":
 	ctrl_hostname = socket.gethostname()
 
 	#
-	# mount NFS server
-	# Now controller serves as the NFS, so we don't need to mount NFS
-
-	#
 	# copy common files to NFS
 
 	# ensure directories exist
@@ -173,6 +169,21 @@ if __name__ == "__main__":
 	C["DbdHost"] = ctrl_hostname
 
 	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurmdbd.conf", perm=0o600, owner="slurm")
+
+	#
+	# hardcode controller hostname, username, UID/GID into startup script for
+	# provisioning new instance
+	# this is easier than trying to infer them from the slurm resume script.
+	env_dict = {
+	  "CONTROLLER_NAME" : ctrl_hostname,
+	  "HOST_USER" : os.environ["HOST_USER"],
+	  "HOST_UID" : os.environ["HOST_UID"],
+	  "HOST_GID" : os.environ["HOST_GID"]
+	}
+	subprocess.check_call(
+	  "sudo perl -pe '" + " ".join([fr"/^export {k}=/ && s/^(.*)/${{1}}{v}/;" for k, v in env_dict.items()]) + "' -i {CPR}/src/worker_startup_script.sh".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
+	  shell = True
+	)
 
 	#
 	# start Slurm controller

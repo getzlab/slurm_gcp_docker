@@ -2,9 +2,14 @@
 
 set -e
 
-## mount NFS
-CONTROLLER_NAME=$(curl "http://metadata.google.internal/computeMetadata/v1/instance/attributes/slurm-controller-hostname" -H "Metadata-Flavor: Google")
+## placeholders for environment variables that will be subsequently be burned
+ # into this script by provision_server.py
+export CONTROLLER_NAME=
+export HOST_USER=
+export HOST_UID=
+export HOST_GID=
 
+## mount NFS
 echo "Starting NFS ..."
 
 [ ! -d /mnt/nfs ] && sudo mkdir -p /mnt/nfs
@@ -44,9 +49,11 @@ nvidia-smi && GPU_FLAGS="--gpus all"
 SHM_SIZE=$(df -h -BM --output=size /dev/shm | sed 1d | awk '{print tolower($0)}')
 
 # start the container
+
 docker run -dti --rm --pid host --network host --privileged \
   -v /mnt/nfs:/mnt/nfs -v /sys/fs/cgroup:/sys/fs/cgroup \
   -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker \
   -v /dev:/dev ${GPU_FLAGS} --shm-size ${SHM_SIZE} \
   --entrypoint /sgcpd/src/docker_entrypoint_worker.sh --name slurm \
+  -e HOST_USER -e HOST_UID -e HOST_GID \
   broadinstitute/slurm_gcp_docker
