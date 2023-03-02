@@ -109,6 +109,9 @@ ENTRYPOINT /sgcpd/src/docker_entrypoint_controller.sh
 ENV SLURM_CONF "/mnt/nfs/clust_conf/slurm/slurm.conf"
 ENV CLOUDSDK_CONFIG "/user_gcloud_config"
 
+# bind mount gcloud config into task Docker
+ENV CANINE_DOCKER_ARGS "-v /user_gcloud_config:/user_gcloud_config"
+
 #
 # update PATH environment
 ENV PATH="/sgcpd/src/docker_bin:${PATH}"
