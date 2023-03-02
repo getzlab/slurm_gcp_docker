@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # add gcloud credentials to slurm's home directory
-[ ! -d ~slurm/.config/gcloud ] && mkdir -p ~slurm/.config/gcloud
-cp -r /mnt/nfs/credentials/gcloud/ ~slurm/.config/gcloud && \
+[ ! -d ~slurm/.config ] && mkdir -p ~slurm/.config
+cp -r /mnt/nfs/credentials/gcloud ~slurm/.config/gcloud && \
 chown -R slurm:slurm ~slurm/.config/gcloud && \
 ln -s ~slurm/.config/gcloud /slurm_gcloud_config
 
 # add gcloud credentials to user's home directory
 HOMEDIR=`eval echo ~$HOST_USER`
-[ ! -d $HOMEDIR/.config/gcloud ] && mkdir -p $HOMEDIR/.config/gcloud
-cp -r /mnt/nfs/credentials/gcloud/ $HOMEDIR/.config/gcloud && chown -R $HOST_USER:$HOST_USER $HOMEDIR/.config/
+[ ! -d $HOMEDIR/.config ] && mkdir -p $HOMEDIR/.config
+cp -r /mnt/nfs/credentials/gcloud $HOMEDIR/.config/gcloud && chown -R $HOST_USER:$HOST_USER $HOMEDIR/.config/
 ln -s $HOMEDIR/.config/gcloud /user_gcloud_config
 
 # add Docker credentials to user's home directory
