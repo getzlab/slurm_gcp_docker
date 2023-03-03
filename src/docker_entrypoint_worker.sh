@@ -1,7 +1,9 @@
 #!/bin/bash
 
-sudo -E /usr/local/share/slurm_gcp_docker/src/docker_copy_gcloud_credentials.sh
+. /sgcpd/src/docker_init_credentials.sh
 
-. /usr/local/share/slurm_gcp_docker/src/slurm_start.sh
-/usr/local/share/slurm_gcp_docker/src/container_heartbeat.sh &
+/sgcpd/src/docker_copy_gcloud_credentials.sh
+
+. /sgcpd/src/slurm_start.sh
+/sgcpd/src/container_heartbeat.sh &
 /bin/bash

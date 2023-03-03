@@ -35,7 +35,7 @@ while True:
                 # second time we've encountered this disk; remove it
                 if disk in bad_disks:
                     subprocess.check_call(f"mountpoint -q {mountpoint} && sudo umount {mountpoint} || true", shell = True)
-                    subprocess.check_call(f"CLOUDSDK_CONFIG=/etc/gcloud gcloud compute instances detach-disk {HOSTNAME} --zone {ZONE} --disk {disk}", shell = True)
+                    subprocess.check_call(f"CLOUDSDK_CONFIG=/slurm_gcloud_config gcloud compute instances detach-disk {HOSTNAME} --zone {ZONE} --disk {disk}", shell = True)
 
                     bad_disks.remove(disk)
 

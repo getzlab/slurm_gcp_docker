@@ -51,14 +51,10 @@ def print_conf(D, path, owner = None, perm = None):
 
 if __name__ == "__main__":
 	CLUST_PROV_ROOT = os.environ["CLUST_PROV_ROOT"] if "CLUST_PROV_ROOT" in os.environ \
-	                  else "/usr/local/share/slurm_gcp_docker"
+	                  else "/sgcpd"
 	#TODO: check if this is indeed a valid path
 
 	ctrl_hostname = socket.gethostname()
-
-	#
-	# mount NFS server
-	# Now controller serves as the NFS, so we don't need to mount NFS
 
 	#
 	# copy common files to NFS
@@ -67,12 +63,12 @@ if __name__ == "__main__":
 	for d in [
 	  "/mnt/nfs/clust_conf/slurm",
 	  "/mnt/nfs/clust_conf/canine",
-	  "/mnt/nfs/clust_scripts",
+	  "/mnt/nfs/credentials/gcloud",
 	  "/mnt/nfs/clust_logs",
 	  "/mnt/nfs/workspace"
 	]:
 		subprocess.check_call("""
-		  [ ! -d """ + d + " ] && mkdir -p " + d + """ ||
+		  [ ! -d """ + d + " ] && sudo mkdir -p " + d + """ ||
 			true
 		  """, shell = True, executable = '/bin/bash')
 
@@ -94,14 +90,6 @@ if __name__ == "__main__":
 	  shell = True
 	)
 
-	# scripts
-	subprocess.check_call(
-	  "cp -r {CPR}/src/* /mnt/nfs/clust_scripts".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
-	  shell = True
-	)
-
-	# TODO: copy the tool to run
-
 	#
 	# setup Slurm config files
 
@@ -121,6 +109,16 @@ if __name__ == "__main__":
 	NODE_TYPES["nodes"]       = NODE_TYPES.apply(lambda row: "{HN}-worker[{range_start}-{range_end}]".format(HN=ctrl_hostname, **row), axis=1)
 	NODE_TYPES["partition1"]  = np.where(NODE_TYPES["preemptible"], NODE_TYPES["type"], NODE_TYPES["type"] + "-nonp")
 	NODE_TYPES["partition2"]  = np.where(NODE_TYPES["preemptible"], "main", "nonpreemptible")
+	
+	# if no accelerator nodes, add nan columns
+	if 'accelerator_count' not in NODE_TYPES.columns or 'accelerator_type' not in NODE_TYPES.columns:
+		NODE_TYPES['accelerator_count'] = np.nan
+		NODE_TYPES['accelerator_type'] = np.nan
+
+	# account for gpu nodes
+	gpu_idxs = ~NODE_TYPES["accelerator_count"].isnull()
+	NODE_TYPES.loc[gpu_idxs, 'partition1'] += '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_count"].astype(int).astype(str) + '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_type"]
+	NODE_TYPES.loc[gpu_idxs, 'partition2'] = 'gpu'
 
 	# node definitions
 	for idx, row in NODE_TYPES.iterrows():
@@ -132,13 +130,15 @@ if __name__ == "__main__":
 	for idx, row in NODE_TYPES.iterrows():
 		C["PartitionName" + str(idx+1)] = "{partition1} Nodes={nodes}".format(HN=ctrl_hostname, **dict(row))
 
-	C["PartitionName888"] = "main Nodes={} Default=YES".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "main"]["nodes"]))
-	C["PartitionName889"] = "nonpreemptible Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "nonpreemptible"]["nodes"]))
+	C["PartitionName887"] = "main Nodes={} Default=YES".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "main"]["nodes"]))
+	C["PartitionName888"] = "nonpreemptible Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "nonpreemptible"]["nodes"]))
+	if len(NODE_TYPES.loc[NODE_TYPES["partition2"] == "gpu"]) > 0: # only add gpu partition if nodes exist
+		C["PartitionName889"] = "gpu Nodes={} Default=NO".format(",".join(NODE_TYPES.loc[NODE_TYPES["partition2"] == "gpu"]["nodes"]))
 	C["PartitionName999"] = "all Nodes={} Default=NO".format(",".join(NODE_TYPES["nodes"]))
 
 	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurm.conf")
 
-	nonstandardparts = ["all", "main", "nonpreemptible"]
+	nonstandardparts = ["all", "main", "nonpreemptible", "gpu"]
 
 	#
 	# save node lookup table
@@ -150,12 +150,17 @@ if __name__ == "__main__":
 	parts = parts.loc[~parts["start"].isna() & (~parts["partition"].isin(nonstandardparts))].astype({ "start" : int, "end" : int })
 
 	nonpreemptible_range = list(itertools.chain(*[range(x, y + 1) for x, y in parts.loc[parts["partition"].str.contains(r"-nonp$"), ["start", "end"]].values]))
+	gpu_range =  list(itertools.chain(*[range(x, y + 1) for x, y in parts.loc[parts["partition"].str.contains(r"-nonp-\d-.*"),["start", "end"]].values]))
+	nonpreemptible_range += gpu_range
 
 	nodes = []
 	for part in parts.itertuples():
 		nodes.append(pd.DataFrame([[part.partition, False if x in nonpreemptible_range else True, part.prefix + str(x)] for x in range(part.start, part.end + 1)], columns = ["machine_type", "preemptible", "idx"]))
 	nodes = pd.concat(nodes).set_index("idx")
 
+	# add in gpu columns
+	nodes = parsein(nodes, "machine_type", r".*nonp-(\d+)-(.*)$", ["accelerator_count", "accelerator_type"])
+	
 	nodes.to_pickle("/mnt/nfs/clust_conf/slurm/host_LuT.pickle")
 
 	#
@@ -164,6 +169,21 @@ if __name__ == "__main__":
 	C["DbdHost"] = ctrl_hostname
 
 	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurmdbd.conf", perm=0o600, owner="slurm")
+
+	#
+	# hardcode controller hostname, username, UID/GID into startup script for
+	# provisioning new instance
+	# this is easier than trying to infer them from the slurm resume script.
+	env_dict = {
+	  "CONTROLLER_NAME" : ctrl_hostname,
+	  "HOST_USER" : os.environ["HOST_USER"],
+	  "HOST_UID" : os.environ["HOST_UID"],
+	  "HOST_GID" : os.environ["HOST_GID"]
+	}
+	subprocess.check_call(
+	  "sudo perl -pe '" + " ".join([fr"/^export {k}=/ && s/^(.*)/${{1}}{v}/;" for k, v in env_dict.items()]) + "' -i {CPR}/src/worker_startup_script.sh".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
+	  shell = True
+	)
 
 	#
 	# start Slurm controller

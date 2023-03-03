@@ -3,7 +3,7 @@
 # runs inside each worker container, checks every 5 minutes if the container is
 # healthy. if not, blacklist this node.
 
-export CLOUDSDK_CONFIG=/etc/gcloud
+export CLOUDSDK_CONFIG=/slurm_gcloud_config
 
 # get zone of instance
 ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2> /dev/null))
@@ -13,7 +13,7 @@ export LOGFILE=/mnt/nfs/clust_logs/${HOSTNAME}.heartbeat.log
 [ -f $LOGFILE ] && rm -f $LOGFILE
 
 # run separate daemon to detect hung disks
-/usr/local/share/slurm_gcp_docker/src/hung_disk_daemon.py >> $LOGFILE 2>&1 &
+/sgcpd/src/hung_disk_daemon.py >> $LOGFILE 2>&1 &
 
 while true; do
 	# check if Podman is responsive

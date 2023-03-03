@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export SLURM_CONF=/mnt/nfs/clust_conf/slurm/slurm.conf
-export CLOUDSDK_CONFIG=~slurm/.config/gcloud
+export CLOUDSDK_CONFIG=/slurm_gcloud_config
 
 # assume zone of instance is the same as the zone of the controller
 # because gcloud list API requests are highly throttled, this approach is much
