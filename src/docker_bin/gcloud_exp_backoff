@@ -11,7 +11,7 @@ while true; do
 		echo "gcloud operation cannot be completed due to quota limit" >&2
 		exit 5
 	fi
-	if gcloud $@ 2> >(tee /dev/stderr >&3); then
+	if gcloud $@ 2> >(tee -a /dev/stderr >&3); then
 		exit 0
 	else
 		RC=$?
