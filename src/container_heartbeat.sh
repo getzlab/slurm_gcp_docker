@@ -43,7 +43,7 @@ while true; do
 	timeout 30 bash -c 'scontrol ping | grep -q "is DOWN"'
 	RC=$?
 	if [[ $RC == 124 || $RC == 0 ]]; then # 124 -> timeout; 0 -> grep succeeded
-		timeout 1 bash -c "echo \"`date` self-destructing due to nonresponsive controller!\"
+		timeout 1 bash -c "echo \"`date` self-destructing due to nonresponsive controller!\""
 		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
 	fi
 
