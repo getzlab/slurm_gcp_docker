@@ -1,0 +1,111 @@
+#!/bin/bash
+
+## this file can either be sourced or run as a standalone script.
+(return 0 2> /dev/null) && IS_STANDALONE=0 || IS_STANDALONE=1
+# if the former, then it expects that the following variables are already set:
+if ${IS_STANDALONE}; then
+    # usage: gcloud_make_rwdisk <disk_name> <disk_size> <mount_point_prefix> <is_scratch_disk true|false> <node_name> <node_zone>
+    GCP_DISK_NAME=$1
+    GCP_DISK_SIZE=$2
+    GCP_TSNT_DISKS_DIR=$3
+    GCP_IS_SCRATCH=$4
+    CANINE_NODE_NAME=$5
+    CANINE_NODE_ZONE=$6
+
+    #shopt -s expand_aliases
+    #alias gcloud=gcloud_exp_backoff
+fi
+
+## create disk
+if ! gcloud compute disks describe "${GCP_DISK_NAME}" --zone ${CANINE_NODE_ZONE}; then
+    gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type pd-standard --zone "${CANINE_NODE_ZONE}" --labels wolf=canine
+fi
+
+## if this is a scratch disk, label it as such
+if ${GCP_IS_SCRATCH}; then
+    gcloud compute disks add-labels "${GCP_DISK_NAME}" --zone "$CANINE_NODE_ZONE" --labels scratch=yes
+fi
+
+## attach as read-write, using same device-name as disk-name
+if [[ ! -e /dev/disk/by-id/google-${GCP_DISK_NAME} ]]; then
+    gcloud compute instances attach-disk "$CANINE_NODE_NAME" --zone "$CANINE_NODE_ZONE" --disk "$GCP_DISK_NAME" --device-name "$GCP_DISK_NAME" || true
+fi
+
+## wait for disk to attach, with exponential backoff up to 2 minutes
+if ! ${IS_STANDALONE}; then
+  DELAY=1
+  while [ ! -b /dev/disk/by-id/google-${GCP_DISK_NAME} ]; do
+    ## check if disk is being created by _another_ instance (grep -qv $CANINE_NODE_NAME)
+    if gcloud compute disks describe $GCP_DISK_NAME --zone $CANINE_NODE_ZONE --format "csv(users)[no-heading]" | grep '^http' | grep -qv "$CANINE_NODE_NAME"'$'; then
+      # if disk is a localization disk (i.e. not a scratch disk), wait approximately how long it would take to transfer files to 
+      if ! $GCP_IS_SCRATCH; then
+        TRIES=0
+        # wait until disk is marked "finished"
+        while ! gcloud compute disks describe $GCP_DISK_NAME --zone $CANINE_NODE_ZONE --format "csv(labels)" | grep -q "finished=yes"; do
+          echo "Waiting for localization disk to become available ..." >&2
+          [ $TRIES == 0 ] && sleep (($GCP_DISK_SIZE*10)) || sleep 300 # assume 100 MB/sec transfer for first timeout; 5 minutes thereafter up to 10 tim
+          [ $TRIES -ge 10 ] && { echo "Exceeded timeout waiting for disk to become available" >&2; exit 1; } || :
+          ((++TRIES))
+        done
+        # special exit code to cause the script to be skipped in entrypoint.sh
+        exit 15 #DEBUG_OMIT
+  
+      # if disk is a scratch disk, wait up to two hours for it to finish. once it's finished, fail the localizer, to cause task to be requeued and avoided.
+      else
+        TRIES=0
+        # wait until disk is marked "finished"
+        while ! gcloud compute disks describe $GCP_DISK_NAME --zone $CANINE_NODE_ZONE --format "csv(labels)" | grep -q "finished=yes"; do
+          echo "Waiting for scratch disk to become available ..." >&2
+          sleep 60
+          [ $TRIES -ge 120 ] && { echo "Exceeded timeout waiting for another node to finish making scratch disk" >&2; exit 1; } || :
+          ((++TRIES))
+        done
+        # fail localizer -> requeue task -> job avoid 
+        exit 1 #DEBUG_OMIT
+      fi
+    fi
+    # TODO: what if the task exited on the other
+    #       instance without running the teardown script
+    #       (e.g. task was cancelled), in which case we'd want to forcibly
+    #       detach the disk from the other instance
+    #       are there any scenarios in which this would be a bad idea?
+  
+    ## if disk is not being created by another instance, it might just be taking a bit to attach. give it a chance to appear in /dev
+    [ $DELAY -gt 128 ] && { echo "Exceeded timeout trying to attach disk" >&2; exit 1; } || :
+    sleep $DELAY; ((DELAY *= 2))
+  
+    # try attaching again if delay has exceeded 8 seconds
+    # if disk has attached successfully according to GCP, but disk doesn't appear in /dev,
+    # this means that the node is bad
+    if [ $DELAY -gt 8 ]; then
+      gcloud compute instances attach-disk "$CANINE_NODE_NAME" --zone "$CANINE_NODE_ZONE" --disk "$GCP_DISK_NAME" --device-name "$GCP_DISK_NAME" || :
+      if gcloud compute disks describe $GCP_DISK_NAME --zone $CANINE_NODE_ZONE --format "csv(users)[no-heading]" | grep '^http' | grep -q $CANINE_NODE_NAME'$' && [ ! -b /dev/disk/by-id/google-${GCP_DISK_NAME} ]; then
+        sudo touch /.fatal_disk_issue_sentinel
+        echo "Node cannot attach disk; node is likely bad. Tagging for deletion." >&2
+        exit 1
+      fi
+    fi
+  done
+fi
+
+## format disk
+if [[ $(sudo blkid -o value -s TYPE /dev/disk/by-id/google-${GCP_DISK_NAME}) != "ext4" ]]; then
+    sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/disk/by-id/google-${GCP_DISK_NAME}
+fi
+
+## mount
+if [[ ! -d "$GCP_TSNT_DISKS_DIR/$GCP_DISK_NAME" ]]; then
+    sudo mkdir -p "$GCP_TSNT_DISKS_DIR/$GCP_DISK_NAME"
+fi
+if ! mountpoint -q "$GCP_TSNT_DISKS_DIR/$GCP_DISK_NAME"; then
+    sudo timeout -k 30 30 mount -o discard,defaults /dev/disk/by-id/google-"${GCP_DISK_NAME}" "$GCP_TSNT_DISKS_DIR/$GCP_DISK_NAME"
+    sudo chown $(id -u):$(id -g) "${GCP_TSNT_DISKS_DIR}/${GCP_DISK_NAME}"
+    sudo chmod 774 "${GCP_TSNT_DISKS_DIR}/${GCP_DISK_NAME}"
+fi
+
+## lock the disk
+# will be unlocked during teardown script (or if script crashes). this
+# is a way of other processes surveying if this is a hanging disk.
+if ! ${IS_STANDALONE}; then
+    flock -os "$GCP_TSNT_DISKS_DIR/$GCP_DISK_NAME" sleep infinity & echo $! >> ${CANINE_JOB_INPUTS}/.scratchdisk_lock_pids
+fi
