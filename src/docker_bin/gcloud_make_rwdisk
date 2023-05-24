@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## this file can either be sourced or run as a standalone script.
-(return 0 2> /dev/null) && IS_STANDALONE=0 || IS_STANDALONE=1
+(return 0 2> /dev/null) && IS_STANDALONE=false || IS_STANDALONE=true
 # if the former, then it expects that the following variables are already set:
 if ${IS_STANDALONE}; then
     # usage: gcloud_make_rwdisk <disk_name> <disk_size> <mount_point_prefix> <is_scratch_disk true|false> <node_name> <node_zone>
@@ -43,7 +43,7 @@ if ! ${IS_STANDALONE}; then
         # wait until disk is marked "finished"
         while ! gcloud compute disks describe $GCP_DISK_NAME --zone $CANINE_NODE_ZONE --format "csv(labels)" | grep -q "finished=yes"; do
           echo "Waiting for localization disk to become available ..." >&2
-          [ $TRIES == 0 ] && sleep (($GCP_DISK_SIZE*10)) || sleep 300 # assume 100 MB/sec transfer for first timeout; 5 minutes thereafter up to 10 tim
+          [ $TRIES == 0 ] && sleep $(($GCP_DISK_SIZE*10)) || sleep 300 # assume 100 MB/sec transfer for first timeout; 5 minutes thereafter up to 10 tim
           [ $TRIES -ge 10 ] && { echo "Exceeded timeout waiting for disk to become available" >&2; exit 1; } || :
           ((++TRIES))
         done
