@@ -36,6 +36,11 @@ while ! mountpoint -q /mnt/nfs; do
 done
 echo
 
+# mount rclone exports if they exist
+for mount_script in /mnt/nfs/.rclone*.sh; do
+	source $mount_script
+done
+
 ## start Slurm docker
 
 # resolves occasional quota exceeded error, per https://stackoverflow.com/questions/54405454/error-response-from-daemon-join-session-keyring-create-session-key-disk-quota
