@@ -8,4 +8,5 @@
 
 mysqld --user root &
 sudo -E -u $HOST_USER /sgcpd/src/provision_server.py
+/sgcpd/src/controller_healthcheck.sh &
 sudo -E -u $HOST_USER /bin/bash
