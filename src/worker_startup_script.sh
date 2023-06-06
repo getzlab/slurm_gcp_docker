@@ -36,8 +36,8 @@ while ! mountpoint -q /mnt/nfs; do
 done
 echo
 
-# mount rclone exports if they exist
-for mount_script in /mnt/nfs/.rclone*.sh; do
+# mount rclone drives if they exist
+for mount_script in $(find /mnt/nfs/ -maxdepth 1 -name ".rclone*.sh"); do
 	source $mount_script
 done
 
