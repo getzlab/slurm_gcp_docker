@@ -30,7 +30,7 @@ fi
 # otherwise, wait for mount to be ready (NFS server is starting up)
 echo -n "Waiting for NFS server to be ready ..."
 while ! mountpoint -q /mnt/nfs; do
-	sudo mount -o defaults,hard,intr ${CONTROLLER_NAME}:/mnt/nfs /mnt/nfs &> /dev/null
+	sudo mount -o defaults,hard,intr,nolock ${CONTROLLER_NAME}:/mnt/nfs /mnt/nfs &> /dev/null
 	echo -n "."
 	sleep 1
 done
