@@ -15,6 +15,5 @@ docker exec slurm scontrol update nodename=$HOSTNAME state=POWER_DOWN reason="po
 # get zone of instance
 ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2> /dev/null))
 
-export CLOUDSDK_CONFIG=/mnt/nfs/credentials/gcloud/
-ls -1 /dev/disk/by-id/google-canine* | grep -o 'canine-.*$' | \
-  xargs -I {} -n 1 -P 0 gcloud compute instances detach-disk $HOSTNAME --device-name {} --zone $ZONE
+find /dev/disk/by-id -name "google-canine*" | grep -o 'canine-.*$' | \
+  xargs -I {} -n 1 -P 0 docker exec slurm gcloud compute instances detach-disk $HOSTNAME --device-name {} --zone $ZONE
