@@ -96,7 +96,7 @@ if __name__ == "__main__":
 	if not args.skip_docker_image_push:
 		subprocess.check_call(f"""
 		  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
-			gcr.io/broad-getzlab-workflows/slurm_gcp_docker:{VERSION} && \
+			gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
 		  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
 			gcr.io/{proj}/slurm_gcp_docker:latest && \
 		  docker push gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
