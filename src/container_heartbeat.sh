@@ -5,6 +5,10 @@
 
 export CLOUDSDK_CONFIG=/slurm_gcloud_config
 
+# add exponential backoff to all gcloud commands
+shopt -s expand_aliases
+alias gcloud=gcloud_exp_backoff
+
 # create instance logfile
 export LOGFILE=/mnt/nfs/clust_logs/${HOSTNAME}.heartbeat.log
 [ -f $LOGFILE ] && rm -f $LOGFILE

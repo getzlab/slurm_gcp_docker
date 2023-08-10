@@ -13,4 +13,4 @@ INST_LIST=$(scontrol show hostnames $@)
 
 # XXX: gcloud assumes that sys.stdin will always be not None, so we need to pass
 #      dummy stdin (/dev/null)
-gcloud compute instances delete $INST_LIST --zone $ZONE --quiet < /dev/null
+gcloud_exp_backoff compute instances delete $INST_LIST --zone $ZONE --quiet < /dev/null
