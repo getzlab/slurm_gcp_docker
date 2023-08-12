@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DELAY=$((60 + RANDOM%10)) # exponential backoff + jitter, to avoid multiple exp. backoffs from firing at the same time. set delay to 60 because gcloud quotas are enforced on minute increments.
+DELAY=$((10 + RANDOM%10)) # exponential backoff + jitter, to avoid multiple exp. backoffs from firing at the same time.
 while true; do
 	PIPE=$(mktemp -u)
 	mkfifo $PIPE
