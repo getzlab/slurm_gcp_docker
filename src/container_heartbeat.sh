@@ -20,6 +20,9 @@ ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.inter
 # run separate daemon to detect hung disks
 /sgcpd/src/hung_disk_daemon.py &
 
+# run separate daemon to automatically resize boot disk
+/sgcpd/src/worker_boot_disk_resize.sh &
+
 while true; do
 	# check if Podman is responsive
 	if ! timeout 300 podman info &> /dev/null; then

@@ -11,7 +11,7 @@ DEBIAN_FRONTEND=noninteractive \
 apt-get -y install --no-install-recommends tzdata && \
 apt-get -y install software-properties-common build-essential vim git nfs-common \
   portmap libmariadb-dev mariadb-client mariadb-server munge libmunge-dev \
-  libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl
+  libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl cloud-guest-utils
 
 # Python 3.8
 RUN add-apt-repository -y ppa:deadsnakes/ppa && apt-get update && \
