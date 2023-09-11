@@ -4,6 +4,12 @@
 # run on the worker node as the node shutdown script (as provisioned in slurm_resume.py,
 # with script path sourced from pickled config file saved from backend)
 
+# check if node is actually being preempted
+# shutdown script will run if systemd restarts; we don't want this to cause the node to powerdown
+if [ $(curl "http://metadata.google.internal/computeMetadata/v1/instance/preempted" -H "Metadata-Flavor: Google" 2> /dev/null) == "FALSE" ]; then
+  exit 0
+fi
+
 # alert controller that this host is being preempted; set status to fail
 docker exec slurm scontrol update nodename=$HOSTNAME state=FAIL reason="shutdown triggered" && \
 docker exec slurm scontrol update nodename=$HOSTNAME state=DOWN reason="shutdown triggered" && \
