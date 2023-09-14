@@ -69,7 +69,7 @@ RUN chmod 755 /sgcpd/src/slurm_suspend_wrapper.sh /sgcpd/src/slurm_resume_wrappe
 
 # 10. podman
 RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
-RUN wget -O libsubid4.dpkg http://mirrors.kernel.org/ubuntu/pool/main/s/shadow/libsubid4_4.11.1+dfsg1-2ubuntu1_amd64.deb && \
+RUN wget -O libsubid4.dpkg https://storage.googleapis.com/getzlab-wolf/libsubid/libsubid4_4.13+dfsg1-1ubuntu1_amd64.deb && \
   dpkg -i libsubid4.dpkg
 RUN wget -O podman.dpkg https://storage.googleapis.com/getzlab-wolf/podman/podman_4.3.1.dpkg && \
   dpkg -i podman.dpkg && apt-get install -y fuse-overlayfs iptables
