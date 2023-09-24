@@ -5,7 +5,6 @@
     { "type":  "n1-highmem-2", "cpus":  "2", "realmemory":  "12000", "weight": "4" , "number":  500, "preemptible":  true  },
     { "type":  "n1-highmem-4", "cpus":  "4", "realmemory":  "23200", "weight": "4" , "number":  500, "preemptible":  true  },
     { "type":  "n1-highmem-8", "cpus":  "8", "realmemory":  "50200", "weight": "4" , "number":  100, "preemptible":  true  },
-    { "type": "n1-highmem-32", "cpus": "32", "realmemory": "204200", "weight": "5" , "number":   10, "preemptible":  true },
 
     { "type": "n1-highcpu-8",  "cpus":  "8", "realmemory":  "7000",  "weight": "1" , "number": 1000, "preemptible":  false },
     { "type": "n1-highcpu-16", "cpus":  "16", "realmemory": "14000", "weight": "2" , "number": 2000, "preemptible":  false },
