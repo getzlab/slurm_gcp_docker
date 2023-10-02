@@ -7,7 +7,7 @@ while true; do
 	exec 3<>$PIPE 4<$PIPE
 	rm $PIPE
 
-	if [ $DELAY -gt 320 ]; then
+	if [ $DELAY -gt 40 ]; then
 		echo "gcloud operation cannot be completed due to quota limit" >&2
 		exit 5
 	fi
