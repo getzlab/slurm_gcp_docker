@@ -1,13 +1,19 @@
 #!/bin/bash
 
 DELAY=$((10 + RANDOM%10)) # exponential backoff + jitter, to avoid multiple exp. backoffs from firing at the same time.
+if [[ $1 =~ ^[0-9]+$ ]]; then
+	MAX_DELAY=$1
+	shift
+else
+	MAX_DELAY=40
+fi
 while true; do
 	PIPE=$(mktemp -u)
 	mkfifo $PIPE
 	exec 3<>$PIPE 4<$PIPE
 	rm $PIPE
 
-	if [ $DELAY -gt 40 ]; then
+	if [ $DELAY -gt $MAX_DELAY ]; then
 		echo "gcloud operation cannot be completed due to quota limit" >&2
 		exit 5
 	fi
