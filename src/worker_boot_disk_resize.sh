@@ -7,7 +7,7 @@ while true; do
   DISK_SIZE_GB=$(df -B1G / | awk 'NR == 2 { print int($3 + $4) }')
   FREE_SPACE_GB=$(df -B1G / | awk 'NR == 2 { print int($4) }')
   if [[ $((100*FREE_SPACE_GB/DISK_SIZE_GB)) -lt 30 ]]; then
-    gcloud_exp_backoff compute disks resize $HOSTNAME --quiet --zone $ZONE --size $((DISK_SIZE_GB*160/100))
+    gcloud_exp_backoff 320 compute disks resize $HOSTNAME --quiet --zone $ZONE --size $((DISK_SIZE_GB*160/100))
     sudo growpart /dev/sda 1
     sudo resize2fs /dev/sda1
   fi

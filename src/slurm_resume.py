@@ -73,7 +73,7 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 
 	# run gcloud command to create instances
 	subprocess.Popen(
-	  """/sgcpd/src/docker_bin/gcloud_exp_backoff compute instances create {HOST_LIST} --image {image} --image-project {image_project} \
+	  """/sgcpd/src/docker_bin/gcloud_exp_backoff 320 compute instances create {HOST_LIST} --image {image} --image-project {image_project} \
 		 --machine-type {MT} \
          --metadata-from-file startup-script=/sgcpd/src/worker_startup_script.sh,shutdown-script=/sgcpd/src/worker_shutdown_script.sh \
          --zone {compute_zone} {preemptible} \

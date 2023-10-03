@@ -13,7 +13,7 @@ while true; do
 			DISK_SIZE_GB=$(df -B1G $DISK_DEV | awk 'NR == 2 { print int($3 + $4) }')
 			FREE_SPACE_GB=$(df -B1G $DISK_DEV | awk 'NR == 2 { print int($4) }')
 			if [[ $((100*FREE_SPACE_GB/DISK_SIZE_GB)) -lt 10 ]]; then
-				gcloud_exp_backoff compute disks resize $GOOGLE_DISK_NAME --quiet --zone $ZONE --size $((DISK_SIZE_GB+200))
+				gcloud_exp_backoff 320 compute disks resize $GOOGLE_DISK_NAME --quiet --zone $ZONE --size $((DISK_SIZE_GB+200))
 				sudo resize2fs $DISK_DEV
 			fi
 		fi
