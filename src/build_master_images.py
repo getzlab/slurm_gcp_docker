@@ -87,10 +87,10 @@ if __name__ == "__main__":
 	#
 
 	subprocess.check_call(f"""
-	  (cd .. &&
+	  (cd .. && ([ -d ./wolF ] && rm -rf ./wolF || :) && git clone -b wolfpack --single-branch git@github.com:getzlab/wolF.git &&
 	  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:{VERSION} \
 		-t broadinstitute/slurm_gcp_docker:latest \
-		-f src/Dockerfile .)""", shell = True
+		-f src/Dockerfile . && rm -rf wolF)""", shell = True
 	)
 
 	if not args.skip_docker_image_push:

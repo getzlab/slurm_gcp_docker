@@ -93,6 +93,10 @@ RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
 RUN wget https://beta.rclone.org/branch/pasnox-symlink/v1.62.0-beta.6680.19c6081de.pasnox-symlink/rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb && \
   apt install ./rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb
 
+# 13. install wolF (to allow wolFPack to orchestrate workflows on worker nodes)
+COPY ./wolF ./wolF
+RUN pip3 install ./wolF
+
 #
 # clean up /tmp
 RUN rm -rf *
