@@ -51,7 +51,7 @@ RUN pip3 install pandas==1.4.2 crcmod google-crc32c requests
 
 # 8. install gcloud and AWS
 RUN mkdir /gcsdk && \
-wget -O gcs.tgz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-318.0.0-linux-x86_64.tar.gz && \
+wget -O gcs.tgz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-457.0.0-linux-x86_64.tar.gz && \
 tar xzf gcs.tgz -C /gcsdk && \
 /gcsdk/google-cloud-sdk/install.sh --usage-reporting false --path-update true --quiet && \
 ln -s /gcsdk/google-cloud-sdk/bin/* /usr/bin
