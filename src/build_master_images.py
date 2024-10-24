@@ -30,6 +30,7 @@ add { "experimental": true } to /etc/docker/daemon.json
 	parser.add_argument('--build_script', '-s', help = "Path to build script whose output is run on the dummy VM", default = "./master_image_builder_dummy_vm_startup_script.sh")
 	parser.add_argument('--skip_docker_image_push', help = "Whether to skip pushing Docker image to centeralized container regisitry", action = "store_true")
 	parser.add_argument('--skip_vm_image_build', help = "Skip building the worker VM image, i.e. only build the Docker image", action = "store_true")
+	parser.add_argument('--skip_docker_image_build', help = "Skip building the Docker image, i.e. only build the VM image", action = "store_true")
 
 	args = parser.parse_args()
 
@@ -86,23 +87,24 @@ if __name__ == "__main__":
 	# 1. build Docker image
 	#
 
-	subprocess.check_call(f"""
-	  (cd .. &&
-	  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:{VERSION} \
-		-t broadinstitute/slurm_gcp_docker:latest \
-		-f src/Dockerfile .)""", shell = True
-	)
-
-	if not args.skip_docker_image_push:
+	if not args.skip_docker_image_build:
 		subprocess.check_call(f"""
-		  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
-			gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
-		  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
-			gcr.io/{proj}/slurm_gcp_docker:latest && \
-		  docker push gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
-		  docker push gcr.io/{proj}/slurm_gcp_docker:latest""",
-		  shell = True
+		  (cd .. &&
+		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:{VERSION} \
+			-t broadinstitute/slurm_gcp_docker:latest \
+			-f src/Dockerfile .)""", shell = True
 		)
+
+		if not args.skip_docker_image_push:
+			subprocess.check_call(f"""
+			  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
+			  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker:latest && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker:latest""",
+			  shell = True
+			)
 
 	#
 	# 2. build VM worker image
