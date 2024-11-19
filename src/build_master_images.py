@@ -23,7 +23,7 @@ Note that the Docker daemon must have experimental features enabled;
 add { "experimental": true } to /etc/docker/daemon.json
 """, formatter_class = argparse.RawTextHelpFormatter)
 	parser.add_argument('--image_prefix', '-i', help = "Prefix of image name", default = "wolf-worker-image")
-	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker-v1")
+	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker-v2")
 	parser.add_argument('--zone', '-z', help = "Compute zone to create dummy instance in", default = zone)
 	parser.add_argument('--project', '-p', help = "Compute project to create image in", default = "broad-getzlab-workflows")
 	parser.add_argument('--dummyhost', '-d', help = "Name of dummy VM image gets built on", default = "dummyhost")
