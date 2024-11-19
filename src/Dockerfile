@@ -89,9 +89,9 @@ RUN sed -i 's/^#no-cgroups = false/no-cgroups = true/;' /etc/nvidia-container-ru
 # 11. sudo for all
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
 
-# 12. rclone
-RUN wget https://beta.rclone.org/branch/pasnox-symlink/v1.62.0-beta.6680.19c6081de.pasnox-symlink/rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb && \
-  apt install ./rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb
+# # 12. rclone
+# RUN wget https://beta.rclone.org/branch/pasnox-symlink/v1.62.0-beta.6680.19c6081de.pasnox-symlink/rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb && \
+#   apt install ./rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb
 
 #
 # clean up /tmp
