@@ -25,6 +25,7 @@ RUN ln -s /usr/bin/python3 /usr/bin/python && \
 mkdir -p /mnt/nfs
 
 # 3. build Slurm
+RUN apt-get -y install libjson-c-dev
 RUN wget https://download.schedmd.com/slurm/slurm-24.05.4.tar.bz2 && \
 tar xjf slurm-24.05.4.tar.bz2 && \
 cd slurm-24.05.4 && \
