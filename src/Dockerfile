@@ -25,9 +25,9 @@ RUN ln -s /usr/bin/python3 /usr/bin/python && \
 mkdir -p /mnt/nfs
 
 # 3. build Slurm
-RUN wget https://download.schedmd.com/slurm/slurm-20.11.9.tar.bz2 && \
-tar xjf slurm-20.11.9.tar.bz2 && \
-cd slurm-20.11.9 && \
+RUN wget https://download.schedmd.com/slurm/slurm-24.05.4.tar.bz2 && \
+tar xjf slurm-24.05.4.tar.bz2 && \
+cd slurm-24.05.4 && \
 ./configure --prefix=/usr/local --sysconfdir=/usr/local/etc \
   --with-mysql_config=/usr/bin --with-hdf5=no && \
 make && make install
@@ -68,7 +68,7 @@ RUN ln -s /usr/local/share/slurm_gcp_docker/ /sgcpd
 RUN chmod 755 /sgcpd/src/slurm_suspend_wrapper.sh /sgcpd/src/slurm_resume_wrapper.sh
 
 # 10. podman
-RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
+RUN apt-get update && apt-get install -y libgpgme11 conmon golang-github-containers-common crun
 RUN wget -O libsubid4.dpkg https://storage.googleapis.com/getzlab-wolf/libsubid/libsubid4_4.13+dfsg1-1ubuntu1_amd64.deb && \
   dpkg -i libsubid4.dpkg
 RUN wget -O podman.dpkg https://storage.googleapis.com/getzlab-wolf/podman/podman_4.3.1.dpkg && \
