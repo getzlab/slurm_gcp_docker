@@ -40,7 +40,7 @@ def get_current_zone():
     zone = re.sub(".*/", "", zone)
     return zone
 
-def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="n1-standard-4", boot_disk_size=200):
+def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="n4-standard-4", boot_disk_size=200):
     if project is None:
         project = get_current_project()
     if zone is None:
@@ -51,6 +51,7 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
 
     wolfuser = getpass.getuser()
     ## I used "enable-oslogin=TRUE", which ensures consistent UID within a project.
+    # slw not sure where this is used, maybe if you haven't already made a vm at the beginning it does it for you? 
     subprocess.check_call(
         f"gcloud compute instances create {instance_name} \
             --quiet \
@@ -60,7 +61,7 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
             --image ubuntu-minimal-2004-focal-v20210511 \
             --image-project ubuntu-os-cloud \
             --boot-disk-size {boot_disk_size}GB \
-            --boot-disk-type pd-standard \
+            --boot-disk-type hyperdisk-standard \
             --scopes cloud-platform,compute-rw \
             --tags=wolfcontroller \
             --metadata=enable-oslogin=TRUE,wolfuser={wolfuser}"
@@ -106,7 +107,7 @@ def main():
     parser.add_argument("--project", type=str)
     parser.add_argument("--zone", type=str, default = "us-east1-d")
     parser.add_argument("instance_name", type=str)
-    parser.add_argument("--machine-type", type=str, default="n1-standard-4")
+    parser.add_argument("--machine-type", type=str, default="n4-standard-4")
     parser.add_argument("--boot-disk-size", type=int, default=200)
     args = parser.parse_args()
     download_getzlab_ssh_key()
