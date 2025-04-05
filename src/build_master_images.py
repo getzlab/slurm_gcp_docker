@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
 	#
 	# parse arguments
-	args = parse_args(default_zone)
+	args = parse_args('us-east1-d')
 
 	zone = args.zone
 	proj = args.project
@@ -88,19 +88,19 @@ if __name__ == "__main__":
 
 	subprocess.check_call(f"""
 	  (cd .. &&
-	  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:{VERSION} \
-		-t broadinstitute/slurm_gcp_docker:latest \
+	  sudo docker build --squash -t broadinstitute/slurm_gcp_docker_n4:{VERSION} \
+		-t broadinstitute/slurm_gcp_docker_n4:latest \
 		-f src/Dockerfile .)""", shell = True
 	)
 
 	if not args.skip_docker_image_push:
 		subprocess.check_call(f"""
-		  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
-			gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
-		  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
-			gcr.io/{proj}/slurm_gcp_docker:latest && \
-		  docker push gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
-		  docker push gcr.io/{proj}/slurm_gcp_docker:latest""",
+		  docker tag broadinstitute/slurm_gcp_docker_n4:{VERSION} \
+			gcr.io/{proj}/slurm_gcp_docker_n4:{VERSION} && \
+		  docker tag broadinstitute/slurm_gcp_docker_n4:{VERSION} \
+			gcr.io/{proj}/slurm_gcp_docker_n4:latest && \
+		  docker push gcr.io/{proj}/slurm_gcp_docker_n4:{VERSION} && \
+		  docker push gcr.io/{proj}/slurm_gcp_docker_n4:latest""",
 		  shell = True
 		)
 
@@ -115,8 +115,8 @@ if __name__ == "__main__":
 	# create dummy instance to build image in
 	try:
 		subprocess.check_call("""gcloud compute --project {proj} instances create {host} --zone {zone} \
-		  --machine-type n4-standard-1 --image ubuntu-minimal-2204-jammy-v20221018 \
-		  --image-project ubuntu-os-cloud --boot-disk-size 15GB --boot-disk-type hyperdisk-standard \
+		  --machine-type n4-standard-2 --image ubuntu-minimal-2204-jammy-v20221018 \
+		  --image-project ubuntu-os-cloud --boot-disk-size 15GB --boot-disk-type hyperdisk-balanced \
 		  --metadata-from-file startup-script=<({build_script})""".format(
 			host = host, proj = proj, zone = zone, build_script = args.build_script
 		), shell = True, executable = "/bin/bash")
@@ -139,15 +139,15 @@ if __name__ == "__main__":
 		print("Transfering slurm docker image to dummy host ...")
 
 		tmp = tempfile.mktemp()
-		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:latest broadinstitute/slurm_gcp_docker:{} > {}".format(VERSION, tmp), shell=True)
-		subprocess.check_call('gcloud compute --project {proj} scp {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
+		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker_n4:latest broadinstitute/slurm_gcp_docker_n4:{} > {}".format(VERSION, tmp), shell=True)
+		subprocess.check_call('gcloud compute --project {proj} scp --tunnel-through-iap {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
 		os.remove(tmp)
 
 		#
 		# wait for startup script to be completed
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to complete startup script ..."
-		  while ! gcloud compute --project {proj} ssh {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
+		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
 		    "[ -f /completed ]" &> /dev/null; do
 			  sleep 1
 			  echo -n ".";
