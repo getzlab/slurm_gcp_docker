@@ -23,13 +23,14 @@ Note that the Docker daemon must have experimental features enabled;
 add { "experimental": true } to /etc/docker/daemon.json
 """, formatter_class = argparse.RawTextHelpFormatter)
 	parser.add_argument('--image_prefix', '-i', help = "Prefix of image name", default = "wolf-worker-image")
-	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker-v1")
+	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker-v2")
 	parser.add_argument('--zone', '-z', help = "Compute zone to create dummy instance in", default = zone)
 	parser.add_argument('--project', '-p', help = "Compute project to create image in", default = "broad-getzlab-workflows")
 	parser.add_argument('--dummyhost', '-d', help = "Name of dummy VM image gets built on", default = "dummyhost")
 	parser.add_argument('--build_script', '-s', help = "Path to build script whose output is run on the dummy VM", default = "./master_image_builder_dummy_vm_startup_script.sh")
 	parser.add_argument('--skip_docker_image_push', help = "Whether to skip pushing Docker image to centeralized container regisitry", action = "store_true")
 	parser.add_argument('--skip_vm_image_build', help = "Skip building the worker VM image, i.e. only build the Docker image", action = "store_true")
+	parser.add_argument('--skip_docker_image_build', help = "Skip building the Docker image, i.e. only build the VM image", action = "store_true")
 
 	args = parser.parse_args()
 
@@ -86,23 +87,24 @@ if __name__ == "__main__":
 	# 1. build Docker image
 	#
 
-	subprocess.check_call(f"""
-	  (cd .. &&
-	  sudo docker build --squash -t broadinstitute/slurm_gcp_docker_n4:{VERSION} \
-		-t broadinstitute/slurm_gcp_docker_n4:latest \
-		-f src/Dockerfile .)""", shell = True
-	)
-
-	if not args.skip_docker_image_push:
+	if not args.skip_docker_image_build:
 		subprocess.check_call(f"""
-		  docker tag broadinstitute/slurm_gcp_docker_n4:{VERSION} \
-			gcr.io/{proj}/slurm_gcp_docker_n4:{VERSION} && \
-		  docker tag broadinstitute/slurm_gcp_docker_n4:{VERSION} \
-			gcr.io/{proj}/slurm_gcp_docker_n4:latest && \
-		  docker push gcr.io/{proj}/slurm_gcp_docker_n4:{VERSION} && \
-		  docker push gcr.io/{proj}/slurm_gcp_docker_n4:latest""",
-		  shell = True
-		)
+			(cd .. && \
+			sudo docker build --squash -t broadinstitute/slurm_gcp_docker_n4:{VERSION} \
+				-t broadinstitute/slurm_gcp_docker_n4:latest \
+				-f src/Dockerfile .)""", shell = True
+			)
+
+		if not args.skip_docker_image_push:
+			subprocess.check_call(f"""
+			  docker tag broadinstitute/slurm_gcp_docker_n4:{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker_n4:{VERSION} && \
+			  docker tag broadinstitute/slurm_gcp_docker_n4:{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker_n4:latest && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker_n4:{VERSION} && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker_n4:latest""",
+			  shell = True
+			)
 
 	#
 	# 2. build VM worker image
@@ -126,7 +128,7 @@ if __name__ == "__main__":
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to be ready ..."
 		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
-		    "[ -f /started ]" &> /dev/null; do
+			"[ -f /started ]" &> /dev/null; do
 			  sleep 1
 			  echo -n ".";
 		  done
@@ -148,7 +150,7 @@ if __name__ == "__main__":
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to complete startup script ..."
 		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
-		    "[ -f /completed ]" &> /dev/null; do
+			"[ -f /completed ]" &> /dev/null; do
 			  sleep 1
 			  echo -n ".";
 		  done

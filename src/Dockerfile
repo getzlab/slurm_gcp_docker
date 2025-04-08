@@ -25,9 +25,10 @@ RUN ln -s /usr/bin/python3 /usr/bin/python && \
 mkdir -p /mnt/nfs
 
 # 3. build Slurm
-RUN wget https://download.schedmd.com/slurm/slurm-20.11.9.tar.bz2 && \
-tar xjf slurm-20.11.9.tar.bz2 && \
-cd slurm-20.11.9 && \
+RUN apt-get -y install libjson-c-dev
+RUN wget https://download.schedmd.com/slurm/slurm-24.05.4.tar.bz2 && \
+tar xjf slurm-24.05.4.tar.bz2 && \
+cd slurm-24.05.4 && \
 ./configure --prefix=/usr/local --sysconfdir=/usr/local/etc \
   --with-mysql_config=/usr/bin --with-hdf5=no && \
 make && make install
@@ -68,7 +69,7 @@ RUN ln -s /usr/local/share/slurm_gcp_docker/ /sgcpd
 RUN chmod 755 /sgcpd/src/slurm_suspend_wrapper.sh /sgcpd/src/slurm_resume_wrapper.sh
 
 # 10. podman
-RUN apt-get install -y libgpgme11 conmon golang-github-containers-common crun
+RUN apt-get update && apt-get install -y libgpgme11 conmon golang-github-containers-common crun
 RUN wget -O libsubid4.dpkg https://storage.googleapis.com/getzlab-wolf/libsubid/libsubid4_4.13+dfsg1-1ubuntu1_amd64.deb && \
   dpkg -i libsubid4.dpkg
 RUN wget -O podman.dpkg https://storage.googleapis.com/getzlab-wolf/podman/podman_4.3.1.dpkg && \
@@ -89,8 +90,12 @@ RUN sed -i 's/^#no-cgroups = false/no-cgroups = true/;' /etc/nvidia-container-ru
 # 11. sudo for all
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
 
+# 12. rclone
+# RUN wget https://beta.rclone.org/branch/pasnox-symlink/v1.62.0-beta.6680.19c6081de.pasnox-symlink/rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb && \
+#   apt install ./rclone-v1.62.0-beta.6680.19c6081de.pasnox-symlink-linux-amd64.deb
+
 # 12. rclone (slw hope this works)
-RUN curl https://rclone.org/install.sh | bash 
+# RUN curl https://rclone.org/install.sh | bash 
 
 #
 # clean up /tmp
