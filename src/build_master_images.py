@@ -90,8 +90,8 @@ if __name__ == "__main__":
 	if not args.skip_docker_image_build:
 		subprocess.check_call(f"""
 		  (cd .. &&
-		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker_balanced_balanced:{VERSION} \
-			-t broadinstitute/slurm_gcp_docker_balanced_balanced:latest \
+		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker_balanced:{VERSION} \
+			-t broadinstitute/slurm_gcp_docker_balanced:latest \
 			-f src/Dockerfile .)""", shell = True
 		)
 
