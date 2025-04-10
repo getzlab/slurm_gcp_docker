@@ -24,6 +24,7 @@ if ! gcloud compute disks describe "${GCP_DISK_NAME}" --zone ${CANINE_NODE_ZONE}
         gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type pd-balanced --zone "${CANINE_NODE_ZONE}" --labels wolf=canine,scratch=yes
     else
         gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type hyperdisk-balanced --zone "${CANINE_NODE_ZONE}" --labels wolf=canine
+    fi
 fi
 
 ## attach as read-write, using same device-name as disk-name
