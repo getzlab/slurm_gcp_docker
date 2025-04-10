@@ -16,14 +16,14 @@ if ${IS_STANDALONE}; then
     #alias gcloud=gcloud_exp_backoff
 fi
 
-## create disk
+## create disk 
+## scratch disks are pd-balanced (because that supports read-only multi-attach) and have an extra label 
+## nfs disk is hyperdisk-balanced (because it has strong i/o) 
 if ! gcloud compute disks describe "${GCP_DISK_NAME}" --zone ${CANINE_NODE_ZONE}; then
-    gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type pd-standard --zone "${CANINE_NODE_ZONE}" --labels wolf=canine
-fi
-
-## if this is a scratch disk, label it as such
-if ${GCP_IS_SCRATCH}; then
-    gcloud compute disks add-labels "${GCP_DISK_NAME}" --zone "$CANINE_NODE_ZONE" --labels scratch=yes
+    if ${GCP_IS_SCRATCH}; then
+        gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type pd-balanced --zone "${CANINE_NODE_ZONE}" --labels wolf=canine,scratch=yes
+    else
+        gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type hyperdisk-balanced --zone "${CANINE_NODE_ZONE}" --labels wolf=canine
 fi
 
 ## attach as read-write, using same device-name as disk-name

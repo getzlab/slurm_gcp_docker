@@ -60,7 +60,7 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
             --image ubuntu-minimal-2004-focal-v20210511 \
             --image-project ubuntu-os-cloud \
             --boot-disk-size {boot_disk_size}GB \
-            --boot-disk-type pd-standard \
+            --boot-disk-type pd-balanced \
             --scopes cloud-platform,compute-rw \
             --tags=wolfcontroller \
             --metadata=enable-oslogin=TRUE,wolfuser={wolfuser}"
