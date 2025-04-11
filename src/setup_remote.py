@@ -60,7 +60,7 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
             --image ubuntu-minimal-2004-focal-v20210511 \
             --image-project ubuntu-os-cloud \
             --boot-disk-size {boot_disk_size}GB \
-            --boot-disk-type pd-balanced \
+            --boot-disk-type pd-ssd \
             --scopes cloud-platform,compute-rw \
             --tags=wolfcontroller \
             --metadata=enable-oslogin=TRUE,wolfuser={wolfuser}"
@@ -84,7 +84,7 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
 
     ## Copy stuff and run user script
     subprocess.check_call(
-        f"gcloud compute scp {SLURM_GCP_DOCKER_DIR}/ {instance_name}:slurm_gcp_docker_balanced --zone {zone} --recurse --project {project} --quiet --scp-flag='-q'", shell=True
+        f"gcloud compute scp {SLURM_GCP_DOCKER_DIR}/ {instance_name}:slurm_gcp_docker_ssd --zone {zone} --recurse --project {project} --quiet --scp-flag='-q'", shell=True
     )
     subprocess.check_call(
         f"gcloud compute scp ~/.config/gcloud/ {instance_name}:copied_gcloud_dir --zone {zone} --recurse --project {project} --quiet --scp-flag='-q'", shell=True

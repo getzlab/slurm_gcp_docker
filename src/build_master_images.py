@@ -90,19 +90,19 @@ if __name__ == "__main__":
 	if not args.skip_docker_image_build:
 		subprocess.check_call(f"""
 		  (cd .. &&
-		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker_balanced:{VERSION} \
-			-t broadinstitute/slurm_gcp_docker_balanced:latest \
+		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker_ssd:{VERSION} \
+			-t broadinstitute/slurm_gcp_docker_ssd:latest \
 			-f src/Dockerfile .)""", shell = True
 		)
 
 		if not args.skip_docker_image_push:
 			subprocess.check_call(f"""
-			  docker tag broadinstitute/slurm_gcp_docker_balanced:{VERSION} \
-				gcr.io/{proj}/slurm_gcp_docker_balanced:{VERSION} && \
-			  docker tag broadinstitute/slurm_gcp_docker_balanced:{VERSION} \
-				gcr.io/{proj}/slurm_gcp_docker_balanced:latest && \
-			  docker push gcr.io/{proj}/slurm_gcp_docker_balanced:{VERSION} && \
-			  docker push gcr.io/{proj}/slurm_gcp_docker_balanced:latest""",
+			  docker tag broadinstitute/slurm_gcp_docker_ssd:{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker_ssd:{VERSION} && \
+			  docker tag broadinstitute/slurm_gcp_docker_ssd:{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker_ssd:latest && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker_ssd:{VERSION} && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker_ssd:latest""",
 			  shell = True
 			)
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 		print("Transfering slurm docker image to dummy host ...")
 
 		tmp = tempfile.mktemp()
-		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker_balanced:latest broadinstitute/slurm_gcp_docker_balanced:{} > {}".format(VERSION, tmp), shell=True)
+		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker_ssd:latest broadinstitute/slurm_gcp_docker_ssd:{} > {}".format(VERSION, tmp), shell=True)
 		subprocess.check_call('gcloud compute --project {proj} scp --tunnel-through-iap {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
 		os.remove(tmp)
 

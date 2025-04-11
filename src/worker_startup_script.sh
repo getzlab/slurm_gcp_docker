@@ -61,4 +61,4 @@ docker run -dti --rm --pid host --network host --privileged \
   -v /dev:/dev ${GPU_FLAGS} --shm-size ${SHM_SIZE} \
   --entrypoint /sgcpd/src/docker_entrypoint_worker.sh --name slurm \
   -e HOST_USER -e HOST_UID -e HOST_GID \
-  broadinstitute/slurm_gcp_docker_balanced
+  broadinstitute/slurm_gcp_docker_ssd
