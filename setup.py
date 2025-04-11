@@ -8,7 +8,7 @@ import subprocess
 test_controller_environment.check_all()
 
 # pull Docker
-subprocess.run("docker pull gcr.io/broad-tcga-wgs-thca-pran-6/slurm_gcp_docker_ssd:latest", shell = True)
+subprocess.run("docker pull gcr.io/broad-tcga-wgs-thca-pran-7/slurm_gcp_docker_c3_hml:latest", shell = True)
 
 # get version
 with open(f"{os.path.dirname(__file__)}/src/VERSION") as v:
