@@ -123,7 +123,7 @@ if __name__ == "__main__":
 		# wait for instance to be ready
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to be ready ..."
-		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap{host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
+		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
 		    "[ -f /started ]" &> /dev/null; do
 			  sleep 1
 			  echo -n ".";
