@@ -123,7 +123,7 @@ if __name__ == "__main__":
 		# wait for instance to be ready
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to be ready ..."
-		  while ! gcloud compute --project {proj} ssh {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
+		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap{host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
 		    "[ -f /started ]" &> /dev/null; do
 			  sleep 1
 			  echo -n ".";
@@ -138,14 +138,14 @@ if __name__ == "__main__":
 
 		tmp = tempfile.mktemp()
 		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:{} > {}".format(VERSION, tmp), shell=True)
-		subprocess.check_call('gcloud compute --project {proj} scp {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
+		subprocess.check_call('gcloud compute --project {proj} scp --tunnel-through-iap {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
 		os.remove(tmp)
 
 		#
 		# wait for startup script to be completed
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to complete startup script ..."
-		  while ! gcloud compute --project {proj} ssh {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
+		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
 		    "[ -f /completed ]" &> /dev/null; do
 			  sleep 1
 			  echo -n ".";
