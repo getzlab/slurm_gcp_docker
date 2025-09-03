@@ -4,13 +4,15 @@
 (return 0 2> /dev/null) && IS_STANDALONE=false || IS_STANDALONE=true
 # if the former, then it expects that the following variables are already set:
 if ${IS_STANDALONE}; then
-    # usage: gcloud_make_rwdisk <disk_name> <disk_size> <mount_point_prefix> <is_scratch_disk true|false> <node_name> <node_zone>
+    # usage: gcloud_make_rwdisk <disk_name> <disk_size> <mount_point_prefix> <is_scratch_disk true|false> <node_name> <node_zone> <disk_type>
     GCP_DISK_NAME=$1
     GCP_DISK_SIZE=$2
     GCP_TSNT_DISKS_DIR=$3
     GCP_IS_SCRATCH=$4
     CANINE_NODE_NAME=$5
     CANINE_NODE_ZONE=$6
+    GCP_NFS_DISK_TYPE=$7
+    # GCP_NFS_DISK_TYPE=${7-"pd-balanced"}
 
     #shopt -s expand_aliases
     #alias gcloud=gcloud_exp_backoff
@@ -18,13 +20,13 @@ fi
 
 ## create disk
 if ! gcloud compute disks describe "${GCP_DISK_NAME}" --zone ${CANINE_NODE_ZONE}; then
-    gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type pd-standard --zone "${CANINE_NODE_ZONE}" --labels wolf=canine
-fi
-
-## if this is a scratch disk, label it as such
-if ${GCP_IS_SCRATCH}; then
-    gcloud compute disks add-labels "${GCP_DISK_NAME}" --zone "$CANINE_NODE_ZONE" --labels scratch=yes
-fi
+    # label scratch disks and always make them pd-standard
+    if ${GCP_IS_SCRATCH}; then
+        gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type pd-standard --zone "${CANINE_NODE_ZONE}" --labels wolf=canine,scratch=yes
+    # if not scratch disk, assume we're making the NFS disk. configurable disk type but defaults to pd-balanced
+    else
+        gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type "${GCP_NFS_DISK_TYPE}" --zone "${CANINE_NODE_ZONE}" --labels wolf=canine
+    fi
 
 ## attach as read-write, using same device-name as disk-name
 if [[ ! -e /dev/disk/by-id/google-${GCP_DISK_NAME} ]]; then
