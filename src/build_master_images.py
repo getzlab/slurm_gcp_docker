@@ -92,6 +92,7 @@ if __name__ == "__main__":
 		  (cd .. &&
 		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:{VERSION} \
 			-t broadinstitute/slurm_gcp_docker:latest \
+			-t broadinstitute/slurm_gcp_docker:configure-nfs \
 			-f src/Dockerfile .)""", shell = True
 		)
 
@@ -101,8 +102,11 @@ if __name__ == "__main__":
 				gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
 			  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
 				gcr.io/{proj}/slurm_gcp_docker:latest && \
+			  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker:configure-nfs && \
 			  docker push gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
-			  docker push gcr.io/{proj}/slurm_gcp_docker:latest""",
+			  docker push gcr.io/{proj}/slurm_gcp_docker:latest && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker:configure-nfs""",
 			  shell = True
 			)
 
