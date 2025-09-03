@@ -8,7 +8,7 @@ import subprocess
 test_controller_environment.check_all()
 
 # pull Docker
-subprocess.run("docker pull gcr.io/broad-getzlab-workflows/slurm_gcp_docker:latest", shell = True)
+subprocess.run("docker pull gcr.io/broad-getzlab-workflows/slurm_gcp_docker:configure-nfs", shell = True)
 
 # get version
 with open(f"{os.path.dirname(__file__)}/src/VERSION") as v:
