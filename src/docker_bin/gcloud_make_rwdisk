@@ -27,6 +27,7 @@ if ! gcloud compute disks describe "${GCP_DISK_NAME}" --zone ${CANINE_NODE_ZONE}
     else
         gcloud compute disks create "${GCP_DISK_NAME}" --size "${GCP_DISK_SIZE}GB" --type "${GCP_NFS_DISK_TYPE}" --zone "${CANINE_NODE_ZONE}" --labels wolf=canine
     fi
+fi
 
 ## attach as read-write, using same device-name as disk-name
 if [[ ! -e /dev/disk/by-id/google-${GCP_DISK_NAME} ]]; then
