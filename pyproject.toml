@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slurm_gcp_docker"
+dynamic = ["version"]
+description = "An autoscaling Slurm cluster on Google Cloud Platform"
+requires-python = "==3.14"
+license = { text = "BSD3" }
+authors = [
+    { name = "Julian Hess/Jialin Ma/Oliver Priebe - Broad Institute - Cancer Genome Computational Analysis", email = "jhess@broadinstitute.org" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: System :: Clustering",
+    "Topic :: System :: Distributed Computing",
+    "License :: OSI Approved :: BSD License",
+]
+
+[tool.setuptools.dynamic]
+version = { file = "src/VERSION" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[project.scripts]
+slurm-gcp-preflight = "src.test_controller_environment:preflight"
+install-slurm-services = "src.install_service:main"

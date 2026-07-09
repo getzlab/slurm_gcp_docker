@@ -24,7 +24,7 @@ def parse_slurm_conf(path):
 
 	output.seek(0)
 
-	return pd.read_csv(output, sep = "=", comment = "#", names = ["key", "value"], index_col = 0, squeeze = True)
+	return pd.read_csv(output, sep = "=", comment = "#", names = ["key", "value"], index_col = 0).squeeze("columns")
 
 # TODO: package Capy so that we don't have to directly source these here
 def parsein(X, col, regex, fields):
@@ -39,7 +39,7 @@ def print_conf(D, path, owner = None, perm = None):
 	if os.path.exists(path):
 		subprocess.check_call(["sudo", "rm", "-rf", path])
 	with open(path, "w") as f:
-		for r in D.iteritems():
+		for r in D.items():
 			f.write("{k}={v}\n".format(
 			  k = re.sub(r"^(NodeName|PartitionName)\d+$", r"\1", r[0]),
 			  v = r[1]

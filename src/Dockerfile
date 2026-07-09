@@ -13,10 +13,10 @@ apt-get -y install software-properties-common build-essential vim git nfs-common
   portmap libmariadb-dev mariadb-client mariadb-server munge libmunge-dev \
   libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl cloud-guest-utils
 
-# Python 3.8
+# Python 3.14
 RUN add-apt-repository -y ppa:deadsnakes/ppa && apt-get update && \
-  apt-get install -y python3.8 python3.8-dev python3.8-venv python3.8-distutils && \
-  rm -f /usr/bin/python3 && ln -s /usr/bin/python3.8 /usr/bin/python3
+  apt-get install -y python3.14 python3.14-dev python3.14-venv && \
+  rm -f /usr/bin/python3 && ln -s /usr/bin/python3.14 /usr/bin/python3
 # pip
 RUN python3 -m ensurepip && python3 -m pip install pip
 
@@ -48,7 +48,7 @@ mysql -u root -e "grant all on slurm_acct_db.* TO 'slurm'@'localhost';"
 RUN dd if=/dev/zero bs=1 count=1024 of=/etc/munge/munge.key
 
 # 7. Python prereqs
-RUN pip3 install pandas==1.4.2 crcmod google-crc32c requests
+RUN pip3 install "pandas>=2.2" crcmod google-crc32c requests
 
 # 8. install gcloud and AWS
 RUN mkdir /gcsdk && \
