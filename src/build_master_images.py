@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
 	image_version = re.sub(r"\.","-", VERSION)
 	githash = subprocess.check_output("git rev-parse --short HEAD", shell=True).rstrip().decode()
-	imagename = f"{args.image_prefix}-{image_version}-{githash}"
+	imagename = f"{args.image_prefix}-v{image_version}-{githash}"
 
 	#
 	# make dummyhost hostname user-specific in the unlikely event that two users
@@ -96,9 +96,9 @@ if __name__ == "__main__":
 
 		if not args.skip_docker_image_push:
 			subprocess.check_call(f"""
-			  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
-				gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
-			  docker push gcr.io/{proj}/slurm_gcp_docker:{VERSION}""",
+			  docker tag broadinstitute/slurm_gcp_docker:v{VERSION} \
+				gcr.io/{proj}/slurm_gcp_docker:v{VERSION} && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker:v{VERSION}""",
 			  shell = True
 			)
 
