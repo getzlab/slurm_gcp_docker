@@ -29,5 +29,4 @@ where = ["."]
 include = ["src*"]
 
 [project.scripts]
-slurm-gcp-preflight = "src.test_controller_environment:preflight"
 install-slurm-services = "src.install_service:main"

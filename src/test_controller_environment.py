@@ -74,8 +74,3 @@ def check_all():
     check_gcloud_auth()
     check_git()
     check_nfs()
-
-def preflight():
-    """Entry point for `slurm-gcp-preflight` CLI command."""
-    check_all()
-    subprocess.run("docker pull gcr.io/broad-getzlab-workflows/slurm_gcp_docker:latest", shell=True)
