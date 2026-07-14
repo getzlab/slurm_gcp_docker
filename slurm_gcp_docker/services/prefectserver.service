@@ -1,0 +1,17 @@
+# install to /etc/systemd/system/prefectserver.service
+[Unit]
+Description=Prefect Server
+
+[Service]
+Type=exec
+ExecStart=prefect server start --use-volume --volume-path /var/lib/prefectserver
+Environment=PREFECT_API_URL=http://127.0.0.1:4200/api
+# Note this still doesn't guarantee server is working
+ExecStartPost=/bin/sleep 30
+User=root
+KillMode=process
+KillSignal=SIGINT
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

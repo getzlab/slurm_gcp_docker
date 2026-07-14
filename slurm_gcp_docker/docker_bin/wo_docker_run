@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+set -e
+
+## Argument checks.
+for arg in "$@"; do
+    if [ "$arg" = "--cidfile" ]; then
+        echo "Should not give '--cidfile' argument to $0" >&2
+        exit 1
+    fi
+done
+if [ "$SLURM_JOB_ID" = "" ]; then
+    echo "Can not find SLURM_JOB_ID environment variable" >&2
+    exit 1
+fi
+
+## File to store container name, remove it first, then
+## check its existence after docker run.
+WO_CONTAINER_NAME_FILE=`mktemp --suffix .wo_docker_run.cid`
+rm $WO_CONTAINER_NAME_FILE
+
+## Start running the container in background, with STDIN from this script.
+## Also use --pid=host for protecting mental health.
+docker run --pid host --cidfile $WO_CONTAINER_NAME_FILE $@ < <(cat) &
+
+## Wait until the CID file is created or the process stopped (by accident!)
+sleep 0.1
+while true; do
+    sleep 0.01
+    ## Check file and it is not EMPTY !!!
+    if [ -f $WO_CONTAINER_NAME_FILE ]; then
+        if [ "`cat $WO_CONTAINER_NAME_FILE`" != "" ]; then
+            break
+        #else
+        #    echo I checked $WO_CONTAINER_NAME_FILE once
+        fi
+    fi
+    ## Check accidents
+    if ! kill -0 $!; then
+        wait $!
+        exit $?
+    fi
+done
+
+## Read out the container id
+WO_CONTAINER_NAME=`cat $WO_CONTAINER_NAME_FILE`
+
+## Get the container PID
+WO_CONTAINER_PID=`docker inspect -f '{{ .State.Pid }}' $WO_CONTAINER_NAME`
+
+## There is a chance that $WO_CONTAINER_PID is zero if the
+## container has stopped before `docker inspect`, in this case,
+## we do not need cgclassify.
+if [ "$WO_CONTAINER_PID" != 0 ]; then
+    ## Classify the container process (and all of it's children)
+    ## to the Slurm's cgroups assigned to the job
+
+    # Set the container process free from the docker cgroups
+    cgclassify -g blkio,net_cls,devices,cpuacct,cpu:/ $WO_CONTAINER_PID
+
+    # Include the container process in the Slurm cgroups
+    cgclassify -g memory,cpuset,freezer:/slurm/uid_$UID/job_$SLURM_JOB_ID/step_batch $WO_CONTAINER_PID
+
+    ## Do the same with the child processes
+    cgclassify -g blkio,net_cls,devices,cpuacct,cpu:/                                $(pgrep -P $WO_CONTAINER_PID)
+    cgclassify -g memory,cpuset,freezer:/slurm/uid_$UID/job_$SLURM_JOB_ID/step_batch $(pgrep -P $WO_CONTAINER_PID)
+fi
+
+## Wait for docker run
+wait $!
