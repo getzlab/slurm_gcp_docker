@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "slurm_gcp_docker"
 dynamic = ["version"]
 description = "An autoscaling Slurm cluster on Google Cloud Platform"
-requires-python = "==3.14"
+requires-python = ">=3.14, <3.15"
 license = { text = "BSD3" }
 authors = [
     { name = "Julian Hess/Jialin Ma/Oliver Priebe - Broad Institute - Cancer Genome Computational Analysis", email = "jhess@broadinstitute.org" }
