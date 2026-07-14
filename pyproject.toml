@@ -22,11 +22,11 @@ classifiers = [
 ]
 
 [tool.setuptools.dynamic]
-version = { file = "src/VERSION" }
+version = { file = "slurm_gcp_docker/VERSION" }
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["slurm_gcp_docker*"]
 
 [project.scripts]
-install-slurm-services = "src.install_service:main"
+install-slurm-services = "slurm_gcp_docker.install_service:main"
