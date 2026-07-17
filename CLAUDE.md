@@ -7,9 +7,9 @@ Published image: `gcr.io/broad-getzlab-workflows/slurm_gcp_docker`
 
 ## What This Repo Actually Is
 
-This is primarily an infrastructure/Docker repo. The Python package it installs is minimal scaffolding. The real output is the Docker image defined in `src/Dockerfile`, which canine's `GCPTransient` backend launches on GCP VMs.
+This is primarily an infrastructure/Docker repo. The Python package it installs is minimal scaffolding. The real output is the Docker image defined in `slurm_gcp_docker/Dockerfile`, which canine's `GCPTransient` backend launches on GCP VMs.
 
-## Image Contents (src/Dockerfile)
+## Image Contents (slurm_gcp_docker/Dockerfile)
 
 Base: `ubuntu:22.04`
 
@@ -22,12 +22,12 @@ Key components installed in the image:
 - Podman 4.3.1 + Nvidia container toolkit
 - Python packages in-image: `pandas==1.4.2` (upgrade to 2.x), `crcmod`, `google-crc32c`, `requests`
 
-Entrypoint: `src/docker_entrypoint_controller.sh`
+Entrypoint: `slurm_gcp_docker/docker_entrypoint_controller.sh`
 
-## src/ Structure
+## slurm_gcp_docker/ Structure
 
 ```
-src/
+slurm_gcp_docker/
 ├── Dockerfile                         # main image definition
 ├── VERSION                            # current: v0.17.0
 ├── build_master_images.py             # builds and pushes the Docker image to GCR
@@ -52,7 +52,7 @@ src/
 
 ```bash
 # From inside the repo:
-python src/build_master_images.py
+python slurm_gcp_docker/build_master_images.py
 # This runs docker build and pushes to GCR.
 ```
 
@@ -64,7 +64,7 @@ python src/build_master_images.py
 
 ## Python Version Upgrade Notes (3.8 → 3.14)
 
-**Python in the Dockerfile is hardcoded to 3.8.** The relevant lines in `src/Dockerfile` use `deadsnakes/ppa` to install `python3.8`. To upgrade:
+**Python in the Dockerfile is hardcoded to 3.8.** The relevant lines in `slurm_gcp_docker/Dockerfile` use `deadsnakes/ppa` to install `python3.8`. To upgrade:
 
 1. Change the PPA install from `python3.8` to `python3.14` in the `RUN apt-get install` lines.
 2. Update all `python3.8` binary references and `update-alternatives` calls to `python3.14`.
@@ -80,7 +80,7 @@ python src/build_master_images.py
 ## Post-Upgrade Versioning
 
 After changes are complete:
-1. Update `src/VERSION` (e.g., `v0.18.0`).
-2. Build and push new image: `python src/build_master_images.py`.
+1. Update `slurm_gcp_docker/VERSION` (e.g., `v0.18.0`).
+2. Build and push new image: `python slurm_gcp_docker/build_master_images.py`.
 3. Create git tag `v0.18.0`.
 4. Update `canine/setup.py` to pin to the new tag.

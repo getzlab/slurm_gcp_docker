@@ -1,9 +1,9 @@
 #!/bin/bash
 
-. /sgcpd/src/docker_init_credentials.sh
+. /sgcpd/slurm_gcp_docker/docker_init_credentials.sh
 
-/sgcpd/src/docker_copy_gcloud_credentials.sh
+/sgcpd/slurm_gcp_docker/docker_copy_gcloud_credentials.sh
 
-. /sgcpd/src/slurm_start.sh
-/sgcpd/src/container_heartbeat.sh &
+. /sgcpd/slurm_gcp_docker/slurm_start.sh
+/sgcpd/slurm_gcp_docker/container_heartbeat.sh &
 /bin/bash

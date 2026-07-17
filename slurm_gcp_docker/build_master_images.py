@@ -96,7 +96,7 @@ if __name__ == "__main__":
 		  (cd .. &&
 		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:v{VERSION} \
 			-t broadinstitute/slurm_gcp_docker:latest \
-			-f src/Dockerfile .)""", shell = True
+			-f slurm_gcp_docker/Dockerfile .)""", shell = True
 		)
 
 		if not args.skip_docker_image_push:

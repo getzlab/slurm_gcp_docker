@@ -181,7 +181,7 @@ if __name__ == "__main__":
 	  "HOST_GID" : os.environ["HOST_GID"]
 	}
 	subprocess.check_call(
-	  "sudo perl -pe '" + " ".join([fr"/^export {k}=/ && s/^(.*)/${{1}}{v}/;" for k, v in env_dict.items()]) + "' -i {CPR}/src/worker_startup_script.sh".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
+	  "sudo perl -pe '" + " ".join([fr"/^export {k}=/ && s/^(.*)/${{1}}{v}/;" for k, v in env_dict.items()]) + "' -i {CPR}/slurm_gcp_docker/worker_startup_script.sh".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
 	  shell = True
 	)
 

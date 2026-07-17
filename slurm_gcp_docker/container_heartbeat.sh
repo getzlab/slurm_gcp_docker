@@ -18,10 +18,10 @@ exec > $LOGFILE 2>&1
 ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2> /dev/null))
 
 # run separate daemon to detect hung disks
-/sgcpd/src/hung_disk_daemon.py &
+/sgcpd/slurm_gcp_docker/hung_disk_daemon.py &
 
 # run separate daemon to automatically resize boot disk
-/sgcpd/src/worker_boot_disk_resize.sh &
+/sgcpd/slurm_gcp_docker/worker_boot_disk_resize.sh &
 
 while true; do
 	# check if Podman is responsive

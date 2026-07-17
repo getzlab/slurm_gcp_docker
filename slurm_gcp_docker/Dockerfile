@@ -63,10 +63,10 @@ RUN apt-get -y install unzip && \
   sudo ./aws/install
 
 # 9. get cluster utility scripts
-COPY ./src/ /usr/local/share/slurm_gcp_docker/src/
+COPY ./slurm_gcp_docker/ /usr/local/share/slurm_gcp_docker/slurm_gcp_docker/
 COPY ./conf/ /usr/local/share/slurm_gcp_docker/conf/
 RUN ln -s /usr/local/share/slurm_gcp_docker/ /sgcpd
-RUN chmod 755 /sgcpd/src/slurm_suspend_wrapper.sh /sgcpd/src/slurm_resume_wrapper.sh
+RUN chmod 755 /sgcpd/slurm_gcp_docker/slurm_suspend_wrapper.sh /sgcpd/slurm_gcp_docker/slurm_resume_wrapper.sh
 
 # 10. podman
 RUN apt-get update && apt-get install -y libgpgme11 conmon golang-github-containers-common crun
@@ -75,8 +75,8 @@ RUN wget -O libsubid4.dpkg https://storage.googleapis.com/getzlab-wolf/libsubid/
 RUN wget -O podman.dpkg https://storage.googleapis.com/getzlab-wolf/podman/podman_4.3.1.dpkg && \
   dpkg -i podman.dpkg && apt-get install -y fuse-overlayfs iptables
 
-COPY src/podman_conf/*.conf /etc/containers/
-COPY src/podman_conf/registries.conf.d/* /etc/containers/registries.conf.d/
+COPY slurm_gcp_docker/podman_conf/*.conf /etc/containers/
+COPY slurm_gcp_docker/podman_conf/registries.conf.d/* /etc/containers/registries.conf.d/
 
 # 10.5 get nvidia toolkits for podman
 RUN distribution=$(. /etc/os-release;echo $ID$VERSION_ID)  && curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add - \
@@ -104,7 +104,7 @@ RUN apt-get -y remove build-essential vim git && apt-get -y autoremove
 
 #
 # set entrypoint
-ENTRYPOINT /sgcpd/src/docker_entrypoint_controller.sh
+ENTRYPOINT /sgcpd/slurm_gcp_docker/docker_entrypoint_controller.sh
 
 #
 # set Slurm/gcloud environment (both paths will be updated via Canine backend)
@@ -116,4 +116,4 @@ ENV CANINE_DOCKER_ARGS "-v /user_gcloud_config:/user_gcloud_config"
 
 #
 # update PATH environment
-ENV PATH="/sgcpd/src/docker_bin:${PATH}"
+ENV PATH="/sgcpd/slurm_gcp_docker/docker_bin:${PATH}"
