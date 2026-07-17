@@ -29,7 +29,7 @@ def parse_slurm_conf(path):
 # TODO: package Capy so that we don't have to directly source these here
 def parsein(X, col, regex, fields):
 	T = parse(X[col], regex, fields)
-	return pd.concat([X, T], 1)
+	return pd.concat([X, T], axis=1)
 
 def parse(X, regex, fields):
 	T = X.str.extract(regex).rename(columns = dict(enumerate(fields)));
