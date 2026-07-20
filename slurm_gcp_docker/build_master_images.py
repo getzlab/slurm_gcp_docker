@@ -151,11 +151,13 @@ if __name__ == "__main__":
 		tmp = tempfile.mktemp()
 		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:v{} > {}".format(VERSION, tmp), shell=True)
 		subprocess.check_call('gcloud compute --project {proj} scp --tunnel-through-iap {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
-		subprocess.check_call('gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo docker tag broadinstitute/slurm_gcp_docker:v{version} broadinstitute/slurm_gcp_docker:latest'.format(proj = proj, host = host, zone = zone, version=VERSION), shell=True)
 		os.remove(tmp)
 
 		#
-		# wait for startup script to be completed
+		# wait for startup script to be completed -- touching /data_transferred above only
+		# tells the dummy VM's own startup script to *begin* `docker load`; it doesn't wait
+		# for the (multi-GB, non-instant) load to finish. Must wait for /completed before
+		# doing anything (e.g. tagging) that assumes the image already exists on the VM.
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to complete startup script ..."
 		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
@@ -166,6 +168,10 @@ if __name__ == "__main__":
 		  echo""".format(proj = proj, host = host, zone = zone),
 		  shell = True, executable = "/bin/bash"
 		)
+
+		#
+		# tag the loaded image latest too, now that docker load has actually finished
+		subprocess.check_call('gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo docker tag broadinstitute/slurm_gcp_docker:v{version} broadinstitute/slurm_gcp_docker:latest'.format(proj = proj, host = host, zone = zone, version=VERSION), shell=True)
 
 		#
 		# shut down dummy instance
