@@ -151,6 +151,7 @@ if __name__ == "__main__":
 		tmp = tempfile.mktemp()
 		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:v{} > {}".format(VERSION, tmp), shell=True)
 		subprocess.check_call('gcloud compute --project {proj} scp --tunnel-through-iap {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
+		subprocess.check_call('gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo docker tag broadinstitute/slurm_gcp_docker:v{version} broadinstitute/slurm_gcp_docker:latest'.format(proj = proj, host = host, zone = zone, version=VERSION), shell=True)
 		os.remove(tmp)
 
 		#
