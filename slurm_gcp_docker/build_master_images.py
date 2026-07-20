@@ -89,7 +89,7 @@ if __name__ == "__main__":
 	#
 
 	# gcr.io stores the remote docker image for the controller VM
-	# a local copy is built and tagged broadinstitute/slurm_gcp_docker:[version] for use by the worker VMs
+	# a local copy is built and tagged broadinstitute/slurm_gcp_docker:v[version] for use by the worker VMs
 	# that local copy is stored on a VM image in the slurm-gcp-docker-[version] family
 	if not args.skip_docker_image_build:
 		subprocess.check_call(f"""
@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
 		if not args.skip_docker_image_push:
 			subprocess.check_call(f"""
-			  docker tag broadinstitute/slurm_gcp_docker:v{VERSION} \
+			  docker tag broadinstitute/slurm_gcp_docker:latest \
 				gcr.io/{proj}/slurm_gcp_docker:v{VERSION} && \
-			  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
+			  docker tag broadinstitute/slurm_gcp_docker:latest \
 				gcr.io/{proj}/slurm_gcp_docker:latest && \
 			  docker push gcr.io/{proj}/slurm_gcp_docker:v{VERSION}""",
 			  shell = True
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 		print("Transfering slurm docker image to dummy host ...")
 
 		tmp = tempfile.mktemp()
-		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:{} > {}".format(VERSION, tmp), shell=True)
+		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:v{} > {}".format(VERSION, tmp), shell=True)
 		subprocess.check_call('gcloud compute --project {proj} scp --tunnel-through-iap {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
 		os.remove(tmp)
 
