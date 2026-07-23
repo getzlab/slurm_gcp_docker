@@ -13,10 +13,10 @@ apt-get -y install software-properties-common build-essential vim git nfs-common
   portmap libmariadb-dev mariadb-client mariadb-server munge libmunge-dev \
   libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl cloud-guest-utils
 
-# Python 3.8
+# Python 3.14
 RUN add-apt-repository -y ppa:deadsnakes/ppa && apt-get update && \
-  apt-get install -y python3.8 python3.8-dev python3.8-venv python3.8-distutils && \
-  rm -f /usr/bin/python3 && ln -s /usr/bin/python3.8 /usr/bin/python3
+  apt-get install -y python3.14 python3.14-dev python3.14-venv && \
+  rm -f /usr/bin/python3 && ln -s /usr/bin/python3.14 /usr/bin/python3
 # pip
 RUN python3 -m ensurepip && python3 -m pip install pip
 
@@ -48,7 +48,7 @@ mysql -u root -e "grant all on slurm_acct_db.* TO 'slurm'@'localhost';"
 RUN dd if=/dev/zero bs=1 count=1024 of=/etc/munge/munge.key
 
 # 7. Python prereqs
-RUN pip3 install pandas==1.4.2 crcmod google-crc32c requests
+RUN pip3 install "pandas>=2.2" crcmod google-crc32c requests
 
 # 8. install gcloud and AWS
 RUN mkdir /gcsdk && \
@@ -63,10 +63,10 @@ RUN apt-get -y install unzip && \
   sudo ./aws/install
 
 # 9. get cluster utility scripts
-COPY ./src/ /usr/local/share/slurm_gcp_docker/src/
+COPY ./slurm_gcp_docker/ /usr/local/share/slurm_gcp_docker/slurm_gcp_docker/
 COPY ./conf/ /usr/local/share/slurm_gcp_docker/conf/
 RUN ln -s /usr/local/share/slurm_gcp_docker/ /sgcpd
-RUN chmod 755 /sgcpd/src/slurm_suspend_wrapper.sh /sgcpd/src/slurm_resume_wrapper.sh
+RUN chmod 755 /sgcpd/slurm_gcp_docker/slurm_suspend_wrapper.sh /sgcpd/slurm_gcp_docker/slurm_resume_wrapper.sh
 
 # 10. podman
 RUN apt-get update && apt-get install -y libgpgme11 conmon golang-github-containers-common crun
@@ -75,8 +75,8 @@ RUN wget -O libsubid4.dpkg https://storage.googleapis.com/getzlab-wolf/libsubid/
 RUN wget -O podman.dpkg https://storage.googleapis.com/getzlab-wolf/podman/podman_4.3.1.dpkg && \
   dpkg -i podman.dpkg && apt-get install -y fuse-overlayfs iptables
 
-COPY src/podman_conf/*.conf /etc/containers/
-COPY src/podman_conf/registries.conf.d/* /etc/containers/registries.conf.d/
+COPY slurm_gcp_docker/podman_conf/*.conf /etc/containers/
+COPY slurm_gcp_docker/podman_conf/registries.conf.d/* /etc/containers/registries.conf.d/
 
 # 10.5 get nvidia toolkits for podman
 RUN distribution=$(. /etc/os-release;echo $ID$VERSION_ID)  && curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add - \
@@ -104,7 +104,7 @@ RUN apt-get -y remove build-essential vim git && apt-get -y autoremove
 
 #
 # set entrypoint
-ENTRYPOINT /sgcpd/src/docker_entrypoint_controller.sh
+ENTRYPOINT /sgcpd/slurm_gcp_docker/docker_entrypoint_controller.sh
 
 #
 # set Slurm/gcloud environment (both paths will be updated via Canine backend)
@@ -116,4 +116,4 @@ ENV CANINE_DOCKER_ARGS "-v /user_gcloud_config:/user_gcloud_config"
 
 #
 # update PATH environment
-ENV PATH="/sgcpd/src/docker_bin:${PATH}"
+ENV PATH="/sgcpd/slurm_gcp_docker/docker_bin:${PATH}"

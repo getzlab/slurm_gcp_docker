@@ -77,7 +77,7 @@ if ! [ -f /.startup ]; then
     sudo loginctl enable-linger $USER
 
     ## install systemd units
-    (cd ~/slurm_gcp_docker/src && python3 install_service.py)
+    (cd ~/slurm_gcp_docker/slurm_gcp_docker && python3 install_service.py)
 
     ## setup jupyter notebook config to allow iframe embedding
     mkdir -p ~/.jupyter
@@ -101,7 +101,7 @@ if ! [ -f /.startup ]; then
     sudo systemctl enable --now code-server@$USER
 
     # build slurm image (TODO: check for existing images)
-    (cd ~/slurm_gcp_docker/src && bash ./setup.sh)
+    (cd ~/slurm_gcp_docker/slurm_gcp_docker && bash ./setup.sh)
 
     # start canine backend
     systemctl start --user caninebackend

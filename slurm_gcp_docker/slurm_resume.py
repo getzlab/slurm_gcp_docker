@@ -73,9 +73,9 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 
 	# run gcloud command to create instances
 	subprocess.run(
-	  """/sgcpd/src/docker_bin/gcloud_exp_backoff 320 compute instances create {HOST_LIST} --image {image} --image-project {image_project} \
+	  """/sgcpd/slurm_gcp_docker/docker_bin/gcloud_exp_backoff 320 compute instances create {HOST_LIST} --image {image} --image-project {image_project} \
 		 --machine-type {MT} \
-         --metadata-from-file startup-script=/sgcpd/src/worker_startup_script.sh,shutdown-script=/sgcpd/src/worker_shutdown_script.sh \
+         --metadata-from-file startup-script=/sgcpd/slurm_gcp_docker/worker_startup_script.sh,shutdown-script=/sgcpd/slurm_gcp_docker/worker_shutdown_script.sh \
          --zone {compute_zone} {preemptible} \
 		 --boot-disk-size {DISK_SIZE} {ACCELERATOR_FLAGS} \
 		 --tags caninetransientimage

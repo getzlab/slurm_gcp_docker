@@ -23,7 +23,7 @@ Note that the Docker daemon must have experimental features enabled;
 add { "experimental": true } to /etc/docker/daemon.json
 """, formatter_class = argparse.RawTextHelpFormatter)
 	parser.add_argument('--image_prefix', '-i', help = "Prefix of image name", default = "wolf-worker-image")
-	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker-v2")
+	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker-v3")
 	parser.add_argument('--zone', '-z', help = "Compute zone to create dummy instance in", default = zone)
 	parser.add_argument('--project', '-p', help = "Compute project to create image in", default = "broad-getzlab-workflows")
 	parser.add_argument('--dummyhost', '-d', help = "Name of dummy VM image gets built on", default = "dummyhost")
@@ -31,6 +31,7 @@ add { "experimental": true } to /etc/docker/daemon.json
 	parser.add_argument('--skip_docker_image_push', help = "Whether to skip pushing Docker image to centeralized container regisitry", action = "store_true")
 	parser.add_argument('--skip_vm_image_build', help = "Skip building the worker VM image, i.e. only build the Docker image", action = "store_true")
 	parser.add_argument('--skip_docker_image_build', help = "Skip building the Docker image, i.e. only build the VM image", action = "store_true")
+	parser.add_argument('--test_mode', help = "Skip pushing 'latest' tag to image in centeralized container regisitry", action = "store_true")
 
 	args = parser.parse_args()
 
@@ -76,7 +77,7 @@ if __name__ == "__main__":
 
 	image_version = re.sub(r"\.","-", VERSION)
 	githash = subprocess.check_output("git rev-parse --short HEAD", shell=True).rstrip().decode()
-	imagename = f"{args.image_prefix}-{image_version}-{githash}"
+	imagename = f"{args.image_prefix}-v{image_version}-{githash}"
 
 	#
 	# make dummyhost hostname user-specific in the unlikely event that two users
@@ -87,18 +88,29 @@ if __name__ == "__main__":
 	# 1. build Docker image
 	#
 
+	# gcr.io stores the remote docker image for the controller VM
+	# a local copy is built and tagged broadinstitute/slurm_gcp_docker:v[version] for use by the worker VMs
+	# that local copy is stored on a VM image in the slurm-gcp-docker-[version] family
 	if not args.skip_docker_image_build:
 		subprocess.check_call(f"""
 		  (cd .. &&
-		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:{VERSION} \
-			-f src/Dockerfile .)""", shell = True
+		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:v{VERSION} \
+			-t broadinstitute/slurm_gcp_docker:latest \
+			-f slurm_gcp_docker/Dockerfile .)""", shell = True
 		)
 
 		if not args.skip_docker_image_push:
 			subprocess.check_call(f"""
-			  docker tag broadinstitute/slurm_gcp_docker:{VERSION} \
-				gcr.io/{proj}/slurm_gcp_docker:{VERSION} && \
-			  docker push gcr.io/{proj}/slurm_gcp_docker:{VERSION}""",
+			  docker tag broadinstitute/slurm_gcp_docker:latest \
+				gcr.io/{proj}/slurm_gcp_docker:v{VERSION} && \
+			  docker tag broadinstitute/slurm_gcp_docker:latest \
+				gcr.io/{proj}/slurm_gcp_docker:latest && \
+			  docker push gcr.io/{proj}/slurm_gcp_docker:v{VERSION}""",
+			  shell = True
+			)
+		if not args.test_mode:
+			subprocess.check_call(f"""
+			  docker push gcr.io/{proj}/slurm_gcp_docker:latest""",
 			  shell = True
 			)
 
@@ -137,12 +149,15 @@ if __name__ == "__main__":
 		print("Transfering slurm docker image to dummy host ...")
 
 		tmp = tempfile.mktemp()
-		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:{} > {}".format(VERSION, tmp), shell=True)
+		subprocess.check_call("sudo docker save broadinstitute/slurm_gcp_docker:v{} > {}".format(VERSION, tmp), shell=True)
 		subprocess.check_call('gcloud compute --project {proj} scp --tunnel-through-iap {src} {host}:/tmp/tmp_docker_file --zone {zone} && gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo touch /data_transferred'.format(proj = proj, src=tmp, host=host, zone=zone), shell=True)
 		os.remove(tmp)
 
 		#
-		# wait for startup script to be completed
+		# wait for startup script to be completed -- touching /data_transferred above only
+		# tells the dummy VM's own startup script to *begin* `docker load`; it doesn't wait
+		# for the (multi-GB, non-instant) load to finish. Must wait for /completed before
+		# doing anything (e.g. tagging) that assumes the image already exists on the VM.
 		subprocess.check_call("""
 		  echo -n "Waiting for dummy instance to complete startup script ..."
 		  while ! gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" \
@@ -153,6 +168,10 @@ if __name__ == "__main__":
 		  echo""".format(proj = proj, host = host, zone = zone),
 		  shell = True, executable = "/bin/bash"
 		)
+
+		#
+		# tag the loaded image latest too, now that docker load has actually finished
+		subprocess.check_call('gcloud compute --project {proj} ssh --tunnel-through-iap {host} --zone {zone} -- -o "UserKnownHostsFile /dev/null" sudo docker tag broadinstitute/slurm_gcp_docker:v{version} broadinstitute/slurm_gcp_docker:latest'.format(proj = proj, host = host, zone = zone, version=VERSION), shell=True)
 
 		#
 		# shut down dummy instance

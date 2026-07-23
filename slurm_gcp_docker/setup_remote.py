@@ -92,7 +92,7 @@ def create_wolfcontroller(instance_name, project=None, zone=None, machine_type="
 
     ## Execute setup script
     subprocess.check_call(
-        f'gcloud compute ssh {instance_name} --zone {zone} --project {project} -- -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" -T "bash ~/slurm_gcp_docker/src/setup_remote_user_startup_script.sh"', shell=True
+        f'gcloud compute ssh {instance_name} --zone {zone} --project {project} -- -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" -T "bash ~/slurm_gcp_docker/slurm_gcp_docker/setup_remote_user_startup_script.sh"', shell=True
     )
 
     print(textwrap.dedent(f"""

@@ -24,12 +24,12 @@ def parse_slurm_conf(path):
 
 	output.seek(0)
 
-	return pd.read_csv(output, sep = "=", comment = "#", names = ["key", "value"], index_col = 0, squeeze = True)
+	return pd.read_csv(output, sep = "=", comment = "#", names = ["key", "value"], index_col = 0).squeeze("columns")
 
 # TODO: package Capy so that we don't have to directly source these here
 def parsein(X, col, regex, fields):
 	T = parse(X[col], regex, fields)
-	return pd.concat([X, T], 1)
+	return pd.concat([X, T], axis=1)
 
 def parse(X, regex, fields):
 	T = X.str.extract(regex).rename(columns = dict(enumerate(fields)));
@@ -39,7 +39,7 @@ def print_conf(D, path, owner = None, perm = None):
 	if os.path.exists(path):
 		subprocess.check_call(["sudo", "rm", "-rf", path])
 	with open(path, "w") as f:
-		for r in D.iteritems():
+		for r in D.items():
 			f.write("{k}={v}\n".format(
 			  k = re.sub(r"^(NodeName|PartitionName)\d+$", r"\1", r[0]),
 			  v = r[1]
@@ -181,7 +181,7 @@ if __name__ == "__main__":
 	  "HOST_GID" : os.environ["HOST_GID"]
 	}
 	subprocess.check_call(
-	  "sudo perl -pe '" + " ".join([fr"/^export {k}=/ && s/^(.*)/${{1}}{v}/;" for k, v in env_dict.items()]) + "' -i {CPR}/src/worker_startup_script.sh".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
+	  "sudo perl -pe '" + " ".join([fr"/^export {k}=/ && s/^(.*)/${{1}}{v}/;" for k, v in env_dict.items()]) + "' -i {CPR}/slurm_gcp_docker/worker_startup_script.sh".format(CPR = shlex.quote(CLUST_PROV_ROOT)),
 	  shell = True
 	)
 

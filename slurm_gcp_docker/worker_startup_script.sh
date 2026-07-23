@@ -54,11 +54,13 @@ nvidia-smi && GPU_FLAGS="--gpus all"
 SHM_SIZE=$(df -h -BM --output=size /dev/shm | sed 1d | awk '{print tolower($0)}')
 
 # start the container
-
+# broadinstitute/slurm_gcp_docker:latest is a local-only docker image
+# it is prebuilt in the VM image and its tag is irrespective of the gcr.io image's tag
+# if they were deployed at the same time by slurm_gcp_docker/build_master_images.py they'll have the same tag
 docker run -dti --rm --pid host --network host --privileged \
   -v /mnt/nfs:/mnt/nfs -v /sys/fs/cgroup:/sys/fs/cgroup \
   -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker \
   -v /dev:/dev ${GPU_FLAGS} --shm-size ${SHM_SIZE} \
-  --entrypoint /sgcpd/src/docker_entrypoint_worker.sh --name slurm \
+  --entrypoint /sgcpd/slurm_gcp_docker/docker_entrypoint_worker.sh --name slurm \
   -e HOST_USER -e HOST_UID -e HOST_GID \
   broadinstitute/slurm_gcp_docker:configure-nfs # change back to latest/nothing when done testing
