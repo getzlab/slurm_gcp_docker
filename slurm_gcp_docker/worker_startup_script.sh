@@ -63,4 +63,4 @@ docker run -dti --rm --pid host --network host --privileged \
   -v /dev:/dev ${GPU_FLAGS} --shm-size ${SHM_SIZE} \
   --entrypoint /sgcpd/slurm_gcp_docker/docker_entrypoint_worker.sh --name slurm \
   -e HOST_USER -e HOST_UID -e HOST_GID \
-  broadinstitute/slurm_gcp_docker:configure-nfs # change back to latest/nothing when done testing
+  broadinstitute/slurm_gcp_docker
