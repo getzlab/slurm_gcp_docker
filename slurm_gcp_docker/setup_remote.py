@@ -9,9 +9,9 @@ def download_getzlab_ssh_key():
     pubkey = os.path.join(SLURM_GCP_DOCKER_DIR, "getzlabkey.pub")
     seckey = os.path.join(SLURM_GCP_DOCKER_DIR, "getzlabkey")
     if not os.path.exists(pubkey):
-        subprocess.check_call(["gsutil", "cp", "gs://getzlab-secrets/github-service-account/github.pub", pubkey])
+        subprocess.check_call(["gcloud", "storage", "cp", "gs://getzlab-secrets/github-service-account/github.pub", pubkey])
     if not os.path.exists(seckey):
-        subprocess.check_call(["gsutil", "cp", "gs://getzlab-secrets/github-service-account/github", seckey])
+        subprocess.check_call(["gcloud", "storage", "cp", "gs://getzlab-secrets/github-service-account/github", seckey])
 
 def get_current_project():
     ## Assuming on a GCE instance
