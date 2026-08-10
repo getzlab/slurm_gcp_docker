@@ -62,6 +62,11 @@ RUN apt-get -y install unzip && \
   unzip awscliv2.zip && \
   sudo ./aws/install
 
+# 8b. install gcsfuse (for RODISK-replacement bucket read-only mounts)
+RUN curl -L -O https://github.com/GoogleCloudPlatform/gcsfuse/releases/download/v3.11.2/gcsfuse_3.11.2_amd64.deb && \
+  dpkg -i gcsfuse_3.11.2_amd64.deb && \
+  rm gcsfuse_3.11.2_amd64.deb
+
 # 9. get cluster utility scripts
 COPY ./slurm_gcp_docker/ /usr/local/share/slurm_gcp_docker/slurm_gcp_docker/
 COPY ./conf/ /usr/local/share/slurm_gcp_docker/conf/
