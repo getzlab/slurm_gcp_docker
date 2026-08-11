@@ -11,7 +11,8 @@ DEBIAN_FRONTEND=noninteractive \
 apt-get -y install --no-install-recommends tzdata && \
 apt-get -y install software-properties-common build-essential vim git nfs-common \
   portmap libmariadb-dev mariadb-client mariadb-server munge libmunge-dev \
-  libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl cloud-guest-utils
+  libhwloc-dev cgroup-tools libreadline-dev ssed wget sudo curl cloud-guest-utils \
+  fuse3
 
 # Python 3.14
 RUN add-apt-repository -y ppa:deadsnakes/ppa && apt-get update && \
@@ -62,10 +63,30 @@ RUN apt-get -y install unzip && \
   unzip awscliv2.zip && \
   sudo ./aws/install
 
-# 8b. install gcsfuse (for RODISK-replacement bucket read-only mounts)
+# 8b. install gcsfuse (RODISK-replacement bucket mounts; also the basis of the
+#     /mnt/nfs migration -- see NFS-FUSE.md).
+#     `apt-get install ./file.deb` rather than `dpkg -i` so declared
+#     dependencies resolve instead of leaving a half-configured package.
+#     fuse3 is installed explicitly in step 1 rather than picked up
+#     transitively from fuse-overlayfs (step 10, which runs *after* this), and
+#     supplies both `fusermount3` and `fusermount` -- the latter is what
+#     canine's unmount path calls (canine/localization/base.py).
 RUN curl -L -O https://github.com/GoogleCloudPlatform/gcsfuse/releases/download/v3.11.2/gcsfuse_3.11.2_amd64.deb && \
-  dpkg -i gcsfuse_3.11.2_amd64.deb && \
+  apt-get install -y ./gcsfuse_3.11.2_amd64.deb && \
   rm gcsfuse_3.11.2_amd64.deb
+
+# 8c. permit -- but do not enable -- the allow_other mount option. gcsfuse must
+#     still opt in explicitly with `-o allow_other`. Present so a UID mismatch
+#     between the mounting process and the task container can be worked around
+#     without rebuilding the image.
+RUN sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf
+
+# 8d. fail the build here rather than silently at job runtime. canine mounts
+#     with `gcsfuse` and unmounts with `fusermount -u`, and swallows the
+#     unmount error -- so a missing binary would leak one gcsfuse daemon and
+#     one stale mountpoint per job instead of reporting anything.
+RUN command -v gcsfuse && command -v fusermount && command -v fusermount3 && \
+  gcsfuse --version
 
 # 9. get cluster utility scripts
 COPY ./slurm_gcp_docker/ /usr/local/share/slurm_gcp_docker/slurm_gcp_docker/
