@@ -75,13 +75,7 @@ RUN curl -L -O https://github.com/GoogleCloudPlatform/gcsfuse/releases/download/
   apt-get install -y ./gcsfuse_3.11.2_amd64.deb && \
   rm gcsfuse_3.11.2_amd64.deb
 
-# 8c. permit -- but do not enable -- the allow_other mount option. gcsfuse must
-#     still opt in explicitly with `-o allow_other`. Present so a UID mismatch
-#     between the mounting process and the task container can be worked around
-#     without rebuilding the image.
-RUN sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf
-
-# 8d. fail the build here rather than silently at job runtime. canine mounts
+# 8c. fail the build here rather than silently at job runtime. canine mounts
 #     with `gcsfuse` and unmounts with `fusermount -u`, and swallows the
 #     unmount error -- so a missing binary would leak one gcsfuse daemon and
 #     one stale mountpoint per job instead of reporting anything.
