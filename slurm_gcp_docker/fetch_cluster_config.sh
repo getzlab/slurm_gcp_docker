@@ -13,11 +13,13 @@
 # deferred until it can be validated against a live cluster, because a mistake
 # there stops the cluster from booting at all.
 #
-# Why this exists separately from the NFS copy: slurmdbd refuses to start
-# unless slurmdbd.conf is mode 0600 owned by SlurmUser. gcsfuse has only a
-# mount-wide --file-mode and cannot express per-file ownership, so that file
-# can never live on a bucket mount. Landing config on local disk resolves that
-# outright -- the chmod/chown below are ordinary local-filesystem operations.
+# Note on slurmdbd.conf: it is NOT distributed through here, and does not need
+# to be. slurmdbd runs only on the controller (provision_server.py:200 -- the
+# worker entrypoint starts slurmd only), the controller regenerates the file
+# locally on every cluster start, and it is written 0600 owned by `slurm`,
+# which is why the upload side excludes it (canine utils.upload_cluster_config).
+# An earlier version of this script chmod'd/chown'd a fetched copy; that was
+# solving a distribution problem that does not exist.
 #
 # Usage:  fetch_cluster_config.sh [<bucket>] [<dest-dir>]
 #
@@ -64,15 +66,13 @@ if ! gcloud storage rsync -r "${SRC}" "${DEST}" 2>/tmp/fetch_cluster_config.err;
 	exit 1
 fi
 
-# slurmdbd.conf must be 0600 and owned by SlurmUser or slurmdbd refuses to
-# start. This is the specific constraint that makes a bucket mount unusable for
-# cluster config and local disk necessary.
+# Defensive only: slurmdbd.conf is excluded on the upload side and should never
+# appear here. If a stale copy from an older mirror does turn up, secure it
+# rather than leave a 0644 credentials-bearing file on disk.
 if [[ -f "$DEST/slurm/slurmdbd.conf" ]]; then
 	chmod 600 "$DEST/slurm/slurmdbd.conf" || true
-	if id slurm &>/dev/null; then
-		chown slurm: "$DEST/slurm/slurmdbd.conf" || true
-	fi
-	echo "fetch_cluster_config: secured slurmdbd.conf ($(stat -c '%a %U' "$DEST/slurm/slurmdbd.conf"))"
+	id slurm &>/dev/null && chown slurm: "$DEST/slurm/slurmdbd.conf" || true
+	echo "fetch_cluster_config: WARNING - unexpected slurmdbd.conf in mirror; secured it" >&2
 fi
 
 echo "fetch_cluster_config: fetched $(find "$DEST" -type f | wc -l) file(s)"
