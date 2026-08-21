@@ -52,8 +52,29 @@ else
 	fetch_credentials_from_nfs
 fi
 
+# Link a config path, tolerating one already being there.
+#
+# /user_gcloud_config and /slurm_gcloud_config are what CLOUDSDK_CONFIG points
+# at (Dockerfile ENV). Any gcloud that runs as root before these links exist
+# materialises the path as a root-owned config DIRECTORY -- and a plain
+# `ln -s target /user_gcloud_config` then silently creates
+# /user_gcloud_config/gcloud inside it instead of failing. Every later gcloud
+# keeps reading that root-owned directory, so it authenticates as the VM's
+# service account instead of the user, and the job user cannot write it:
+# localization dies with "Unable to create private file
+# [/user_gcloud_config/credentials.db]: Operation not permitted".
+#
+# Observed on live workers. Replace rather than nest.
+link_gcloud_config() {
+	local target="$1" link="$2"
+	if [ -L "$link" ] || [ -e "$link" ]; then
+		rm -rf "$link"
+	fi
+	ln -s "$target" "$link"
+}
+
 chown -R slurm:slurm ~slurm/.config/gcloud && \
-  ln -s ~slurm/.config/gcloud /slurm_gcloud_config
+  link_gcloud_config ~slurm/.config/gcloud /slurm_gcloud_config
 
 # add gcloud credentials to user's home directory
 HOMEDIR=`eval echo ~$HOST_USER`
@@ -61,7 +82,7 @@ HOMEDIR=`eval echo ~$HOST_USER`
 
 cp -r ~slurm/.config/gcloud $HOMEDIR/.config/gcloud && \
   chown -R $HOST_USER:$HOST_USER $HOMEDIR/.config/ && \
-  ln -s $HOMEDIR/.config/gcloud /user_gcloud_config
+  link_gcloud_config $HOMEDIR/.config/gcloud /user_gcloud_config
 
 # add Docker credentials to user's home directory
 [ ! -d $HOMEDIR/.docker ] && mkdir -p $HOMEDIR/.docker

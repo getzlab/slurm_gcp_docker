@@ -7,11 +7,11 @@
 # into gs://<bucket>/_cluster_conf/ at cluster startup
 # (canine/utils.py:upload_cluster_config).
 #
-# STATUS: staged, not yet wired into the boot path. Nothing reads
-# $CLUSTER_CONF_DIR yet -- slurm_start.sh, slurm_suspend.sh and slurm_resume.py
-# still read /mnt/nfs/clust_conf directly. Retargeting them is deliberately
-# deferred until it can be validated against a live cluster, because a mistake
-# there stops the cluster from booting at all.
+# Called from docker_entrypoint_worker.sh, before slurm_start.sh. slurm_start.sh
+# prefers $DEST over the NFS copy (cluster_conf_paths.sh), so a failure here is
+# non-fatal by design and degrades to the pre-existing behaviour. slurm_resume.py
+# still reads /mnt/nfs/clust_conf directly, but it only ever runs on the
+# controller, where that path is local.
 #
 # Note on slurmdbd.conf: it is NOT distributed through here, and does not need
 # to be. slurmdbd runs only on the controller (provision_server.py:200 -- the
@@ -21,12 +21,12 @@
 # An earlier version of this script chmod'd/chown'd a fetched copy; that was
 # solving a distribution problem that does not exist.
 #
-# Usage:  fetch_cluster_config.sh [<bucket>] [<dest-dir>]
+# Usage:  fetch_cluster_config.sh [<bucket>] [<dest-dir>] [<prefix>]
 #
-# The bucket is resolved in this order:
-#   1. $1
-#   2. $CLUSTER_CONFIG_BUCKET
-#   3. GCE instance metadata attribute "cluster-config-bucket"
+# Bucket and prefix are each resolved in this order:
+#   1. positional argument
+#   2. $CLUSTER_CONFIG_BUCKET / $CLUSTER_CONFIG_PREFIX
+#   3. GCE instance metadata "cluster-config-bucket" / "cluster-config-prefix"
 #
 # Exits non-zero on failure. Callers wiring this into boot MUST treat failure
 # as non-fatal while the NFS copy is still authoritative.
@@ -34,18 +34,33 @@
 set -uo pipefail
 
 DEST="${2:-/opt/cluster-conf}"
-PREFIX="_cluster_conf"
+
+metadata_attr() {
+	curl -s -f -H "Metadata-Flavor: Google" \
+	  "http://metadata.google.internal/computeMetadata/v1/instance/attributes/$1" 2>/dev/null
+}
 
 resolve_bucket() {
 	if [[ -n "${1:-}" ]]; then echo "$1"; return 0; fi
 	if [[ -n "${CLUSTER_CONFIG_BUCKET:-}" ]]; then echo "$CLUSTER_CONFIG_BUCKET"; return 0; fi
-	curl -s -f -H "Metadata-Flavor: Google" \
-	  "http://metadata.google.internal/computeMetadata/v1/instance/attributes/cluster-config-bucket" \
-	  2>/dev/null && return 0
+	metadata_attr cluster-config-bucket && return 0
 	return 1
 }
 
+# The object prefix, which canine namespaces per controller VM
+# (canine.utils.cluster_config_prefix) because one bucket is shared by every
+# cluster in the project. Falling back to the bare prefix would read whichever
+# controller wrote last, so only do that when nothing tells us otherwise --
+# which means an older canine, whose mirror was unnamespaced anyway.
+resolve_prefix() {
+	if [[ -n "${3:-}" ]]; then echo "$3"; return 0; fi
+	if [[ -n "${CLUSTER_CONFIG_PREFIX:-}" ]]; then echo "$CLUSTER_CONFIG_PREFIX"; return 0; fi
+	metadata_attr cluster-config-prefix && return 0
+	echo "_cluster_conf"
+}
+
 BUCKET="$(resolve_bucket "${1:-}")"
+PREFIX="$(resolve_prefix "${1:-}" "${2:-}" "${3:-}")"
 if [[ -z "$BUCKET" ]]; then
 	echo "fetch_cluster_config: no bucket given (arg 1, \$CLUSTER_CONFIG_BUCKET, or instance metadata 'cluster-config-bucket')" >&2
 	exit 1

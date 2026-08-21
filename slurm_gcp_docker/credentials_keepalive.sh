@@ -29,6 +29,10 @@ TTL=${CREDENTIALS_TTL:-3600}
 # canine records the secret name here when it publishes credentials.
 CONF=/mnt/nfs/clust_conf/canine/backend_conf.pickle
 
+# Prints "<secret> <project>". The project is pinned explicitly rather than left
+# to gcloud's active configuration: canine created the secret in a project it
+# resolved itself, and a mismatch here fails silently -- the renewal errors, the
+# TTL runs out, and a long-running cluster loses its credentials mid-flight.
 get_secret_name() {
 	[ -f "$CONF" ] || return 1
 	python3 - "$CONF" <<'PY' 2>/dev/null
@@ -38,16 +42,18 @@ try:
         c = pickle.load(f)
     n = c.get("credentials_secret")
     if n:
-        print(n)
+        print(n, c.get("project") or "")
 except Exception:
     pass
 PY
 }
 
 while true; do
-	SECRET=$(get_secret_name)
+	read -r SECRET PROJECT <<<"$(get_secret_name)"
 	if [ -n "$SECRET" ]; then
-		if ! gcloud secrets update "$SECRET" --ttl="${TTL}s" --quiet >/dev/null 2>&1; then
+		PROJECT_FLAG=""
+		[ -n "$PROJECT" ] && PROJECT_FLAG="--project=$PROJECT"
+		if ! gcloud secrets update "$SECRET" $PROJECT_FLAG --ttl="${TTL}s" --quiet >/dev/null 2>&1; then
 			# Non-fatal and expected in two benign cases: the secret was already
 			# deleted at teardown, or it expired while this loop was asleep.
 			echo "$(date) could not renew credential secret ${SECRET}" >&2

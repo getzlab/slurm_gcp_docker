@@ -82,6 +82,16 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 	_config_bucket = k9_backend_conf.get("storage_bucket")
 	if _config_bucket:
 		_metadata_kv.append("cluster-config-bucket={}".format(_config_bucket))
+		# The bucket is shared by every cluster in the project -- wolF never
+		# passes workflow_name, so it is always canine-<project>-default -- and
+		# workers now PREFER the mirrored config over the NFS copy. Without a
+		# per-controller prefix a worker can boot a different cluster's
+		# slurm.conf, with the wrong ControlMachine and a NodeName list that
+		# does not contain it, and register nowhere. Must stay in step with
+		# canine.utils.cluster_config_prefix.
+		_metadata_kv.append("cluster-config-prefix=_cluster_conf/{}".format(
+		  re.sub(r'[^a-zA-Z0-9_-]+', '-', k9_backend_conf["worker_prefix"]).strip('-')
+		))
 
 	# Name of the Secret Manager secret holding the user's gcloud credentials,
 	# fetched at boot by docker_copy_gcloud_credentials.sh. Absent when canine
