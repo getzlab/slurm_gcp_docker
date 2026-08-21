@@ -71,16 +71,48 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 		acc_count = int(acc_count)
 		accelerator_flags = f"--accelerator=count={acc_count},type={acc_type} --maintenance-policy=TERMINATE"
 
+	# Tell the worker which bucket holds the mirrored cluster config, so
+	# fetch_cluster_config.sh (run from the worker container entrypoint) can pull
+	# it to node-local disk. Read from the backend config canine pickled, which
+	# carries storage_bucket only because canine re-dumps it after the bucket is
+	# provisioned -- the copy written during init_slurm() has it as None.
+	# Omitted entirely when there is no bucket, so the worker falls back to the
+	# NFS config copy. See NFS-FUSE-IMPLEMENTATION-PLAN.md phase 2.
+	_metadata_kv = []
+	_config_bucket = k9_backend_conf.get("storage_bucket")
+	if _config_bucket:
+		_metadata_kv.append("cluster-config-bucket={}".format(_config_bucket))
+
+	# Name of the Secret Manager secret holding the user's gcloud credentials,
+	# fetched at boot by docker_copy_gcloud_credentials.sh. Absent when canine
+	# could not publish it, in which case the worker uses the NFS copy.
+	_creds_secret = k9_backend_conf.get("credentials_secret")
+	if _creds_secret:
+		_metadata_kv.append("credentials-secret={}".format(_creds_secret))
+
+	extra_metadata = "--metadata " + ",".join(_metadata_kv) if _metadata_kv else ""
+
+	# Workers need cloud-platform to reach Secret Manager. GCE's default scopes
+	# do not include it, and this has been invisible until now because every
+	# gcloud call on a worker runs as the *user* via CLOUDSDK_CONFIG
+	# (container_heartbeat.sh, slurm_suspend.sh) rather than as the service
+	# account. The credential fetch is the one call that must use the SA,
+	# because it runs before user credentials exist on the node.
+	scopes_flag = "--scopes=cloud-platform" if _creds_secret else ""
+
 	# run gcloud command to create instances
 	subprocess.run(
 	  """/sgcpd/slurm_gcp_docker/docker_bin/gcloud_exp_backoff 320 compute instances create {HOST_LIST} --image {image} --image-project {image_project} \
 		 --machine-type {MT} \
          --metadata-from-file startup-script=/sgcpd/slurm_gcp_docker/worker_startup_script.sh,shutdown-script=/sgcpd/slurm_gcp_docker/worker_shutdown_script.sh \
+         {EXTRA_METADATA} {SCOPES} \
          --zone {compute_zone} {preemptible} \
 		 --boot-disk-size {DISK_SIZE} {ACCELERATOR_FLAGS} \
 		 --tags caninetransientimage
 	  """.format(
 		HOST_LIST = " ".join(host_list.index), MT = machine_type, DISK_SIZE = disk_size,
-		ACCELERATOR_FLAGS = accelerator_flags, **k9_backend_conf
+		ACCELERATOR_FLAGS = accelerator_flags, EXTRA_METADATA = extra_metadata,
+		SCOPES = scopes_flag,
+		**k9_backend_conf
 	  ), shell = True, executable = '/bin/bash', stdin = subprocess.DEVNULL
 	)

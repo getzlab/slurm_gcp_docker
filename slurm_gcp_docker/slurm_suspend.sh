@@ -1,6 +1,11 @@
 #!/bin/bash
 
-export SLURM_CONF=/mnt/nfs/clust_conf/slurm/slurm.conf
+# Prefer node-local config, fall back to the NFS mount (cluster_conf_paths.sh).
+# Unlike slurm_start.sh this must not block -- Slurm invokes it as
+# SuspendProgram and a hang here would stall node teardown -- so resolve
+# directly and accept the NFS path if local config is absent.
+. /sgcpd/slurm_gcp_docker/cluster_conf_paths.sh
+export SLURM_CONF="$(resolve_cluster_conf_dir)/slurm/slurm.conf"
 export CLOUDSDK_CONFIG=/slurm_gcloud_config
 
 # assume zone of instance is the same as the zone of the controller
