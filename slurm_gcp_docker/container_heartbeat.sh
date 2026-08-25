@@ -34,6 +34,21 @@ exec > $LOGFILE 2>&1
 # get zone of instance
 ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone 2> /dev/null))
 
+# Project this VM lives in, for report_terminal below.
+#
+# Taken from the metadata server rather than left to gcloud's config. gcloud
+# here runs against CLOUDSDK_CONFIG=/slurm_gcloud_config, whose core/project is
+# whatever the *user's* workstation had when their credentials were packed into
+# the Secret Manager payload -- canine lets config["project"] differ from that,
+# and a user with no project set at all would make the write fail outright.
+# Either way the failure is silent, since report_terminal ends in `|| true`.
+# The metadata server always names the project the instance is actually in,
+# which is where a log about this instance belongs. Same trap as the
+# `gcloud secrets update` project mismatch fixed in credentials_keepalive.sh.
+PROJECT=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/project/project-id 2> /dev/null)
+PROJECT_FLAG=""
+[ -n "$PROJECT" ] && PROJECT_FLAG="--project=$PROJECT"
+
 # Record a terminal condition somewhere that outlives this VM.
 #
 # Every caller below deletes the instance moments later, so $LOGFILE -- now on
@@ -55,7 +70,7 @@ report_terminal() {
 	echo "`date` ${reason}"
 	timeout 30 gcloud logging write wolf_worker_heartbeat \
 	  "{\"host\": \"${HOSTNAME}\", \"zone\": \"${ZONE}\", \"reason\": \"${reason}\"}" \
-	  --payload-type=json --severity=ERROR &> /dev/null || true
+	  $PROJECT_FLAG --payload-type=json --severity=ERROR &> /dev/null || true
 }
 
 # run separate daemon to detect hung disks
