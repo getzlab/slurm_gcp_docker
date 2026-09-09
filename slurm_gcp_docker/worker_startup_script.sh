@@ -41,6 +41,23 @@ for mount_script in $(find /mnt/nfs/ -maxdepth 1 -name ".rclone*.sh"); do
 	source $mount_script
 done
 
+## local job workdir
+# Under canine's local_workdir mode the job's working directory lives here rather
+# than on the shared NFS mount, so that output bytes never traverse the
+# controller, and so that tasks get a real POSIX filesystem -- gcsfuse cannot
+# seek-write (bedGraphToBigWig patches its header via fseek) and turns an
+# in-place modification into a full object re-download plus re-upload (pyflow,
+# hence Strelka2 and Manta, appends to its state files on every task transition).
+#
+# This is the worker's boot disk; worker_boot_disk_resize.sh grows it on demand.
+# Created on the host rather than inside the container so that both task runtimes
+# can reach it: podman runs nested and sees the container's own mounts, but the
+# docker path talks to the *host* daemon over the bind-mounted socket, so its
+# -v /mnt:/mnt is resolved in the host namespace.
+echo "Creating local job workdir ..."
+sudo mkdir -p /mnt/local_workdir
+sudo chown ${HOST_UID}:${HOST_GID} /mnt/local_workdir
+
 ## start Slurm docker
 
 # resolves occasional quota exceeded error, per https://stackoverflow.com/questions/54405454/error-response-from-daemon-join-session-keyring-create-session-key-disk-quota
@@ -58,7 +75,7 @@ SHM_SIZE=$(df -h -BM --output=size /dev/shm | sed 1d | awk '{print tolower($0)}'
 # it is prebuilt in the VM image and its tag is irrespective of the gcr.io image's tag
 # if they were deployed at the same time by slurm_gcp_docker/build_master_images.py they'll have the same tag
 docker run -dti --rm --pid host --network host --privileged \
-  -v /mnt/nfs:/mnt/nfs -v /sys/fs/cgroup:/sys/fs/cgroup \
+  -v /mnt/nfs:/mnt/nfs -v /mnt/local_workdir:/mnt/local_workdir -v /sys/fs/cgroup:/sys/fs/cgroup \
   -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker \
   -v /dev:/dev ${GPU_FLAGS} --shm-size ${SHM_SIZE} \
   --entrypoint /sgcpd/slurm_gcp_docker/docker_entrypoint_worker.sh --name slurm \

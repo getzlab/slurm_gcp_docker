@@ -39,8 +39,15 @@ def map_partition_machinetype(partition):
 
 # increase disk size so that: 1. match disk io with network io; 2. allow workloads that
 # put intermediate files to /tmp.
-# TODO: handle this in Canine via scratch disk, mount /tmp there
 # TODO: dynamically resize disk to accommodate large docker pulls
+#
+# This is now load-bearing rather than advisory. Under canine's local_workdir
+# mode the job's working directory is /mnt/local_workdir on the worker's boot
+# disk, not the shared NFS mount, so the boot disk has to be big enough to hold a
+# shard's intermediates. worker_boot_disk_resize.sh (started from
+# container_heartbeat.sh) grows the disk by 60% whenever free space drops under
+# 30%, but it polls every 10s -- a task writing a large BAM can exhaust a small
+# disk between polls, so the *starting* size still matters.
 def map_partition_disksize(partition):
 	try:
 		ncore = int(re.search("[^-]+-[^-]+-(.*)", partition)[1])
@@ -50,13 +57,24 @@ def map_partition_disksize(partition):
 		ans = 100
 	return str(ans) + "GB"
 
+# accepts "200GB", "200", or 200; returns an int number of gigabytes
+def parse_disksize_gb(size):
+	return int(re.sub(r"[^0-9]", "", str(size)))
+
 # create all the nodes of each machine type at once
 # XXX: gcloud assumes that sys.stdin will always be not None, so we need to pass
 #      dummy stdin (/dev/null)
 for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible", "accelerator_count", "accelerator_type"], dropna=False):
 	machine_type, not_nonpreemptible_part, acc_count, acc_type = key
 	machine_type = map_partition_machinetype(machine_type)
-	disk_size = "25GB"
+	# map_partition_disksize() had been defined but never called -- disk_size was
+	# hardcoded to "25GB", which is too small to hold a shard's intermediates once
+	# the job workdir moves off the shared mount. An explicit
+	# worker_boot_disk_size in the canine backend conf overrides it, and may be
+	# given as "200GB", "200", or 200.
+	disk_size = "{}GB".format(parse_disksize_gb(
+	  k9_backend_conf.get("worker_boot_disk_size") or map_partition_disksize(machine_type)
+	))
 
 	# override 'preemptible' flag if this node is in the "non-preemptible" partition
 	if not not_nonpreemptible_part:
@@ -67,7 +85,10 @@ for key, host_list in node_LuT.loc[hosts].groupby(["machine_type", "preemptible"
 	# set accelerator flags if neccessary
 	accelerator_flags = ""
 	if isinstance(acc_count, str):
-		disk_size = "50GB" # cuda images are heavy, scale up boot disk to accomodate
+		# cuda images are heavy, so a GPU node needs at least 50GB -- but this used
+		# to *assign* 50GB, which would now shrink the disk below the size computed
+		# above. Take the larger of the two instead.
+		disk_size = "{}GB".format(max(50, parse_disksize_gb(disk_size)))
 		acc_count = int(acc_count)
 		accelerator_flags = f"--accelerator=count={acc_count},type={acc_type} --maintenance-policy=TERMINATE"
 
