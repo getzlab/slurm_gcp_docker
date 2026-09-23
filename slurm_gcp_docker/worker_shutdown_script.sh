@@ -18,7 +18,7 @@ docker exec slurm scontrol update nodename=$HOSTNAME state=POWER_DOWN reason="po
 #
 # detach any RO disks
 # NOTE: canine-<hash> localization/RODISK disks are now bucket-backed (see
-# BUCKET_FUSE_MIGRATION.md) and no longer created as block devices, so this
+# canine/LOCALIZATION.md) and no longer created as block devices, so this
 # will only ever match canine-scratch-* disks going forward.
 
 # get zone of instance

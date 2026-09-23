@@ -64,7 +64,7 @@ RUN apt-get -y install unzip && \
   sudo ./aws/install
 
 # 8b. install gcsfuse (RODISK-replacement bucket mounts; also the basis of the
-#     /mnt/nfs migration -- see NFS-FUSE.md).
+#     /mnt/nfs migration -- see canine/LOCALIZATION.md).
 #     `apt-get install ./file.deb` rather than `dpkg -i` so declared
 #     dependencies resolve instead of leaving a half-configured package.
 #     fuse3 is installed explicitly in step 1 rather than picked up

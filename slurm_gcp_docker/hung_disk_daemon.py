@@ -7,7 +7,7 @@ import subprocess
 import time
 
 # NOTE: canine-<hash> localization/RODISK disks are now bucket-backed (see
-# BUCKET_FUSE_MIGRATION.md) and no longer created as block devices, so this
+# canine/LOCALIZATION.md) and no longer created as block devices, so this
 # will only ever match canine-scratch-* disks going forward. No pattern
 # change needed -- glob is generic and simply stops matching the retired
 # disk kind on its own.

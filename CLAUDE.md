@@ -29,13 +29,13 @@ Entrypoint: `slurm_gcp_docker/docker_entrypoint_controller.sh`
 ```
 slurm_gcp_docker/
 ├── Dockerfile                         # main image definition
-├── VERSION                            # current: v0.17.0
+├── VERSION                            # current: 0.18.4
 ├── build_master_images.py             # builds and pushes the Docker image to GCR
 ├── provision_server.py                # provisions the SLURM controller VM
 ├── setup_remote.py                    # sets up remote user environment
 ├── slurm_resume.py                    # SLURM ResumeProgram: starts GCP nodes
 ├── slurm_suspend.sh                   # SLURM SuspendProgram: terminates GCP nodes
-├── install_service.py                 # installs systemd services; writes ~/.prefect/backend.toml (remove this)
+├── install_service.py                 # installs systemd services; exports PREFECT_API_URL into ~/.profile
 ├── hung_disk_daemon.py                # watchdog for stuck attached disks
 ├── test_controller_environment.py     # pre-flight checks run at `pip install` time
 ├── docker_entrypoint_controller.sh    # container entrypoint
@@ -75,7 +75,7 @@ python slurm_gcp_docker/build_master_images.py
 
 `services/prefectserver.service` — The `ExecStart` command (`prefect server start --use-volume --volume-path /var/lib/prefectserver`) is already Prefect 3 syntax. No change needed to the service file itself.
 
-**`install_service.py` must be updated:** It currently writes `~/.prefect/backend.toml` with `backend = "server"`. This file does not exist in Prefect 3. Remove that write, and instead export `PREFECT_API_URL=http://127.0.0.1:4200/api` in the appropriate shell profile or systemd `Environment=` directive so that wolF and canine processes on the controller node connect to the Prefect server automatically.
+**`install_service.py` ✅ Done:** it no longer writes `~/.prefect/backend.toml` (a file that does not exist in Prefect 3). It appends `export PREFECT_API_URL=http://127.0.0.1:4200/api` to `~/.profile` instead, so wolF and canine processes on the controller node connect to the Prefect server automatically.
 
 ## Post-Upgrade Versioning
 
