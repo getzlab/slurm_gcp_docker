@@ -59,20 +59,21 @@ if __name__ == "__main__":
 	#
 	# copy common files to NFS
 
-	# ensure directories exist
+	# ensure directories exist. Not a namespace directory: wolF creates
+	# /mnt/nfs/<namespace> on first use, so creating /mnt/nfs/workspace here only
+	# left an empty directory on every controller whose workflows use another one.
 	for d in [
 	  "/mnt/nfs/clust_conf/slurm",
 	  "/mnt/nfs/clust_conf/canine",
 	  "/mnt/nfs/credentials/gcloud",
 	  "/mnt/nfs/clust_logs",
-	  "/mnt/nfs/workspace"
 	]:
 		subprocess.check_call("""
 		  [ ! -d """ + d + " ] && sudo mkdir -p " + d + """ ||
 			true
 		  """, shell = True, executable = '/bin/bash')
 
-	subprocess.check_call("sudo chown {U}:{U} /mnt/nfs /mnt/nfs/workspace; sudo chown -R {U}:{U} /mnt/nfs/clust*".format(U = pwd.getpwuid(os.getuid()).pw_name),
+	subprocess.check_call("sudo chown {U}:{U} /mnt/nfs; sudo chown -R {U}:{U} /mnt/nfs/clust*".format(U = pwd.getpwuid(os.getuid()).pw_name),
 	  shell = True, executable = '/bin/bash')
 
 	# delete any preexisting configuration files
