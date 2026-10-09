@@ -32,7 +32,7 @@ Entrypoint: `slurm_gcp_docker/docker_entrypoint_controller.sh`
 ```
 slurm_gcp_docker/
 ├── Dockerfile                         # main image definition
-├── VERSION                            # current: 0.18.5
+├── VERSION                            # current: 0.18.6
 ├── build_master_images.py             # builds and pushes the Docker image to GCR
 ├── provision_server.py                # provisions the SLURM controller VM
 ├── setup_remote.py                    # sets up remote user environment
