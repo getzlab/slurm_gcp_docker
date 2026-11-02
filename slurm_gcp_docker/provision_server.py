@@ -14,6 +14,9 @@ import itertools
 # sys.path.append("/home/jhess/j/proj/") # TODO: remove this line when Capy is a package
 # from capy import txt
 
+# GCE's limit of 128 persistent disks per VM, less the boot disk
+ATTACHABLE_DISKS_PER_NODE = 127
+
 def parse_slurm_conf(path):
 	output = io.StringIO()
 
@@ -121,9 +124,13 @@ if __name__ == "__main__":
 	NODE_TYPES.loc[gpu_idxs, 'partition1'] += '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_count"].astype(int).astype(str) + '-' + NODE_TYPES.loc[gpu_idxs, "accelerator_type"]
 	NODE_TYPES.loc[gpu_idxs, 'partition2'] = 'gpu'
 
-	# node definitions
+	# node definitions. Each node counts its attachable persistent disks as the
+	# GRES "pdisk": GCE allows 128 per VM, one of them the boot disk. canine
+	# requests one per disk a job attaches (DISK_GRES in canine/orchestrator.py),
+	# so Slurm never puts more on a node than it can attach.
+	C["GresTypes"] = "pdisk"
 	for idx, row in NODE_TYPES.iterrows():
-		C["NodeName" + str(idx+1)] = "{nodes} CPUs={cpus} RealMemory={realmemory} State=CLOUD Weight={weight}".format(HN=ctrl_hostname, **dict(row))
+		C["NodeName" + str(idx+1)] = "{nodes} CPUs={cpus} RealMemory={realmemory} Gres=pdisk:{pdisks} State=CLOUD Weight={weight}".format(HN=ctrl_hostname, pdisks=ATTACHABLE_DISKS_PER_NODE, **dict(row))
 
 	# partition definitions
 	C["PartitionName"] = "DEFAULT MaxTime=INFINITE State=UP".format(HN = ctrl_hostname)
@@ -138,6 +145,10 @@ if __name__ == "__main__":
 	C["PartitionName999"] = "all Nodes={} Default=NO".format(",".join(NODE_TYPES["nodes"]))
 
 	print_conf(C, "/mnt/nfs/clust_conf/slurm/slurm.conf")
+
+	# the pdisk GRES is a count only, with no device files
+	with open("/mnt/nfs/clust_conf/slurm/gres.conf", "w") as f:
+		f.write("Name=pdisk Count={}\n".format(ATTACHABLE_DISKS_PER_NODE))
 
 	nonstandardparts = ["all", "main", "nonpreemptible", "gpu"]
 
