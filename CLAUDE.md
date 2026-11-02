@@ -59,6 +59,28 @@ python slurm_gcp_docker/build_master_images.py
 # This runs docker build and pushes to GCR.
 ```
 
+### Building on Docker 29 (open: drop `--squash`)
+
+The script builds with `docker build --squash`, which needs the legacy builder, the classic
+image store and experimental mode. Docker 29 (Ubuntu 22.04's `docker.io` since late 2026)
+defaults to the containerd image store, which fails at the end with `error squashing image:
+not implemented`. v0.18.7 was built with the classic store switched back on, in the build VM's
+`/etc/docker/daemon.json`:
+
+```json
+{ "experimental": true, "features": { "containerd-snapshotter": false } }
+```
+
+That's a stopgap: the legacy builder is deprecated, and BuildKit never supported `--squash`.
+Planned for the next image version instead:
+- Flatten in the Dockerfile: a final `FROM scratch` stage with `COPY --from=<build stage> / /`,
+  repeating every `ENV`, `ENTRYPOINT` and other metadata line there, as a new stage inherits
+  none of them.
+- Drop `--squash` and the experimental-mode check from `build_master_images.py`.
+- Check it by building on an unmodified Docker 29 and comparing against the squashed v0.18.7:
+  image size, file contents, and `docker inspect`'s `Env`, `Entrypoint` and `Cmd`.
+- Separately, clean apt caches and other temporary files in the layer that creates them.
+
 `setup.py` is unusual: running `pip install .` on the controller host triggers `test_controller_environment.check_all()` (validates gcloud, Docker, etc.) and `docker pull gcr.io/broad-getzlab-workflows/slurm_gcp_docker:latest`.
 
 ## Tests
