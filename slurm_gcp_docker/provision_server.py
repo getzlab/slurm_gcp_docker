@@ -127,8 +127,10 @@ if __name__ == "__main__":
 	# node definitions. Each node counts its attachable persistent disks as the
 	# GRES "pdisk": GCE allows 128 per VM, one of them the boot disk. canine
 	# requests one per disk a job attaches (DISK_GRES in canine/orchestrator.py),
-	# so Slurm never puts more on a node than it can attach.
+	# so Slurm never puts more on a node than it can attach. Accounting records it
+	# too (added to Slurm's default TRES), so sacct shows each job's request.
 	C["GresTypes"] = "pdisk"
+	C["AccountingStorageTRES"] = "gres/pdisk"
 	for idx, row in NODE_TYPES.iterrows():
 		C["NodeName" + str(idx+1)] = "{nodes} CPUs={cpus} RealMemory={realmemory} Gres=pdisk:{pdisks} State=CLOUD Weight={weight}".format(HN=ctrl_hostname, pdisks=ATTACHABLE_DISKS_PER_NODE, **dict(row))
 
