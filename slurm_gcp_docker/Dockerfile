@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as build
+FROM ubuntu:22.04 AS build
 
 WORKDIR /tmp
 
@@ -125,8 +125,18 @@ RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
 RUN rm -rf *
 
 #
-# clean up packages
-RUN apt-get -y remove build-essential vim git && apt-get -y autoremove
+# clean up packages, apt's caches and pip's, and the socket left by step 5's
+# mysqld
+RUN apt-get -y remove build-essential vim git && apt-get -y autoremove && \
+  apt-get clean && rm -rf /var/lib/apt/lists/* /root/.cache /run/mysqld/mysqld.sock
+
+#
+# flatten into one layer. A new stage inherits none of the build stage's
+# metadata, so the base image's WORKDIR and PATH are repeated below with the
+# image's own.
+FROM scratch
+COPY --from=build / /
+WORKDIR /tmp
 
 #
 # set entrypoint
@@ -142,4 +152,4 @@ ENV CANINE_DOCKER_ARGS "-v /user_gcloud_config:/user_gcloud_config"
 
 #
 # update PATH environment
-ENV PATH="/sgcpd/slurm_gcp_docker/docker_bin:${PATH}"
+ENV PATH="/sgcpd/slurm_gcp_docker/docker_bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

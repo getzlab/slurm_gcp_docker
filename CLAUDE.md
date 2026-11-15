@@ -32,7 +32,7 @@ Entrypoint: `slurm_gcp_docker/docker_entrypoint_controller.sh`
 ```
 slurm_gcp_docker/
 ├── Dockerfile                         # main image definition
-├── VERSION                            # current: 0.18.7
+├── VERSION                            # current: 0.18.8
 ├── build_master_images.py             # builds and pushes the Docker image to GCR
 ├── provision_server.py                # provisions the SLURM controller VM
 ├── setup_remote.py                    # sets up remote user environment
@@ -59,27 +59,26 @@ python slurm_gcp_docker/build_master_images.py
 # This runs docker build and pushes to GCR.
 ```
 
-### Building on Docker 29 (open: drop `--squash`)
+### Flattening (no `--squash`)
 
-The script builds with `docker build --squash`, which needs the legacy builder, the classic
-image store and experimental mode. Docker 29 (Ubuntu 22.04's `docker.io` since late 2026)
-defaults to the containerd image store, which fails at the end with `error squashing image:
-not implemented`. v0.18.7 was built with the classic store switched back on, in the build VM's
-`/etc/docker/daemon.json`:
-
-```json
-{ "experimental": true, "features": { "containerd-snapshotter": false } }
-```
-
-That's a stopgap: the legacy builder is deprecated, and BuildKit never supported `--squash`.
-Planned for the next image version instead:
-- Flatten in the Dockerfile: a final `FROM scratch` stage with `COPY --from=<build stage> / /`,
-  repeating every `ENV`, `ENTRYPOINT` and other metadata line there, as a new stage inherits
-  none of them.
-- Drop `--squash` and the experimental-mode check from `build_master_images.py`.
-- Check it by building on an unmodified Docker 29 and comparing against the squashed v0.18.7:
-  image size, file contents, and `docker inspect`'s `Env`, `Entrypoint` and `Cmd`.
-- Separately, clean apt caches and other temporary files in the layer that creates them.
+The Dockerfile flattens the image itself: a final `FROM scratch` stage copies the build
+stage's filesystem (`COPY --from=build / /`), so the script builds without `--squash`, and
+on an unmodified Docker (BuildKit, the containerd image store, no experimental mode).
+`--squash` needed the legacy builder and the classic store, and Docker 29 (Ubuntu 22.04's
+`docker.io` since late 2026) fails it with `error squashing image: not implemented`.
+- A new stage inherits none of the build stage's metadata, so `WORKDIR`, `ENTRYPOINT` and
+  every `ENV` are in the final stage, and `PATH` is written out in full. There's no `CMD`: an
+  `ENTRYPOINT` clears the base image's, as it did in the squashed images.
+- Flattening drops only files deleted by a later step. Files still present at the end stay,
+  so the build stage's last step removes apt's lists and caches, pip's cache, and the socket
+  left by the MySQL setup.
+- Checked (v0.18.8 on Docker 29.1.3 against the squashed v0.18.7): the same `Env`,
+  `Entrypoint`, `Cmd` and `WorkingDir`; the same setuid/setgid files (24), file capabilities
+  (1) and hard links (6); 110 MB less on disk. The base image's
+  `org.opencontainers.image.version` label isn't carried over. The remaining differences are
+  unpinned packages' newer versions (AWS CLI, nvidia-container-toolkit, pip packages).
+- Build from a git clone, not a copy of a macOS checkout: `COPY` takes the source tree's
+  files as they are, including macOS's `._*` metadata files and its file modes.
 
 `setup.py` is unusual: running `pip install .` on the controller host triggers `test_controller_environment.check_all()` (validates gcloud, Docker, etc.) and `docker pull gcr.io/broad-getzlab-workflows/slurm_gcp_docker:latest`.
 

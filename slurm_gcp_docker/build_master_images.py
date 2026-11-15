@@ -9,7 +9,7 @@ import sys
 import shlex
 import tempfile
 
-from test_controller_environment import check_gcloud_auth, check_docker, error
+from test_controller_environment import check_gcloud_auth, check_docker
 
 VERSION = open("VERSION").read().rstrip()
 
@@ -18,9 +18,6 @@ def parse_args(zone):
 """
 This builds the master Slurm Docker image and worker VM host image.
 This is only used by developers updating core functionality of this software package.
-
-Note that the Docker daemon must have experimental features enabled;
-add { "experimental": true } to /etc/docker/daemon.json
 """, formatter_class = argparse.RawTextHelpFormatter)
 	parser.add_argument('--image_prefix', '-i', help = "Prefix of image name", default = "wolf-worker-image")
 	parser.add_argument('--image_family', '-f', help = "Family to add image to", default = "slurm-gcp-docker-v3")
@@ -50,10 +47,6 @@ if __name__ == "__main__":
 	# check prerequisites
 	check_gcloud_auth()
 	check_docker()
-	try:
-		subprocess.check_call("[ -f /etc/docker/daemon.json ] && grep -Eq 'experimental.*[Tt]rue' /etc/docker/daemon.json", shell = True)
-	except subprocess.CalledProcessError:
-		error('Experimental mode must be enabled in Docker (add { "experimental": true } to /etc/docker/daemon.json and restart Docker service)')
 
 	#
 	# get zone of current instance
@@ -91,10 +84,11 @@ if __name__ == "__main__":
 	# gcr.io stores the remote docker image for the controller VM
 	# a local copy is built and tagged broadinstitute/slurm_gcp_docker:v[version] for use by the worker VMs
 	# that local copy is stored on a VM image in the slurm-gcp-docker-[version] family
+	# the Dockerfile flattens the image into one layer itself
 	if not args.skip_docker_image_build:
 		subprocess.check_call(f"""
 		  (cd .. &&
-		  sudo docker build --squash -t broadinstitute/slurm_gcp_docker:v{VERSION} \
+		  sudo docker build -t broadinstitute/slurm_gcp_docker:v{VERSION} \
 			-t broadinstitute/slurm_gcp_docker:latest \
 			-f slurm_gcp_docker/Dockerfile .)""", shell = True
 		)
