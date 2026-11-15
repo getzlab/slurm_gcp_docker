@@ -23,12 +23,22 @@ ZONE=$(basename $(curl -H "Metadata-Flavor: Google" http://metadata.google.inter
 # run separate daemon to automatically resize boot disk
 /sgcpd/slurm_gcp_docker/worker_boot_disk_resize.sh &
 
+PODMAN_SLOW=0
 while true; do
-	# check if Podman is responsive
+	# check if Podman is responsive. Under heavy disk I/O, starting podman alone
+	# can take minutes on a node that's working (2026-11-14; see the disk queue
+	# depth in worker_startup_script.sh), so the node is failed only after two
+	# checks in a row time out
 	if ! timeout 300 podman info &> /dev/null; then
-		echo "`date` podman flatlined"
-		scontrol update nodename=$HOSTNAME state=FAIL reason="podman flatlined" && \
-		gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
+		PODMAN_SLOW=$(( PODMAN_SLOW + 1 ))
+		echo "`date` podman unresponsive for 300 s ($PODMAN_SLOW in a row)"
+		if [ $PODMAN_SLOW -ge 2 ]; then
+			echo "`date` podman flatlined"
+			scontrol update nodename=$HOSTNAME state=FAIL reason="podman flatlined" && \
+			gcloud compute instances delete $HOSTNAME --zone $ZONE --quiet
+		fi
+	else
+		PODMAN_SLOW=0
 	fi
 
 	# check if disk is full (<5% space remaining on root partition)

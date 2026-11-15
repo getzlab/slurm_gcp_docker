@@ -48,6 +48,29 @@ done
 echo 1000000 > /proc/sys/kernel/keys/maxkeys
 echo 25000000 > /proc/sys/kernel/keys/maxbytes
 
+# cap the queue depth of every disk but the boot disk. All of a node's
+# persistent disks share one virtio-scsi queue; at the default depth of 256 per
+# disk, busy disks keep it full and the boot disk's reads wait behind them,
+# 0.5-2 s each, so starting any program took minutes and the heartbeat's
+# `podman info` timed out (2026-11-14). At 8, a 261 GB pd-standard disk still
+# reached its throughput limit, and the boot disk's reads waited tens of ms.
+# Disks attached later get it from the udev rule.
+DISK_QUEUE_DEPTH=8
+BOOT_DISK=$(lsblk -no PKNAME "$(findmnt -no SOURCE /)" | head -1)
+if [ -n "$BOOT_DISK" ]; then
+	cat > /etc/udev/rules.d/99-disk-queue-depth.rules <<-EOF
+	ACTION=="add|change", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", KERNEL=="sd*", KERNEL!="$BOOT_DISK", ATTR{device/queue_depth}="$DISK_QUEUE_DEPTH"
+	EOF
+	udevadm control --reload || true
+	for d in /sys/block/sd*; do
+		if [ "$(basename $d)" != "$BOOT_DISK" ]; then
+			echo $DISK_QUEUE_DEPTH > $d/device/queue_depth || true
+		fi
+	done
+else
+	echo "Boot disk not found; disk queue depths left as they are" > /dev/stderr
+fi
+
 # only set gpu flags if gpu is attached
 nvidia-smi && GPU_FLAGS="--gpus all"
 # allow docker to use full extent of shared memory
